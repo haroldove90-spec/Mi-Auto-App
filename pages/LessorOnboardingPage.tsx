@@ -18,6 +18,81 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+interface CameraModalProps {
+    facingMode: 'user' | 'environment';
+    onCapture: (imageData: string) => void;
+    onClose: () => void;
+}
+
+const CameraModal: React.FC<CameraModalProps> = ({ facingMode, onCapture, onClose }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const [cameraError, setCameraError] = useState('');
+
+    useEffect(() => {
+        const startCamera = async () => {
+            try {
+                setCameraError('');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: facingMode } 
+                });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    streamRef.current = stream;
+                }
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                setCameraError("No se pudo acceder a la cámara. Revisa los permisos.");
+            }
+        };
+
+        startCamera();
+
+        return () => {
+            // Cleanup: stop camera stream when component unmounts
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [facingMode]);
+
+    const handleCapture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            onCapture(dataUrl.split(',')[1]); // Send base64 data without prefix
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4">
+            <div className="relative w-full max-w-lg bg-gray-900 rounded-lg overflow-hidden">
+                {cameraError ? (
+                    <div className="p-8 text-white text-center">
+                        <p className="text-red-400">{cameraError}</p>
+                    </div>
+                ) : (
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-auto"></video>
+                )}
+            </div>
+            <div className="flex items-center justify-center space-x-4 mt-4">
+                 <button onClick={onClose} className="bg-gray-700 text-white font-semibold py-3 px-6 rounded-md">Cancelar</button>
+                 <button onClick={handleCapture} disabled={!!cameraError} className="bg-secondary text-primary font-bold py-3 px-6 rounded-full text-lg disabled:bg-gray-500">
+                    Tomar Foto
+                </button>
+            </div>
+             <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+        </div>
+    );
+};
+
+
 interface LessorOnboardingPageProps {
     onNavigate: (page: Page) => void;
 }
@@ -29,43 +104,11 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     const [ineFront, setIneFront] = useState<string | null>(null);
     const [ineBack, setIneBack] = useState<string | null>(null);
     
-    const [isCameraOn, setIsCameraOn] = useState(false);
+    const [cameraFor, setCameraFor] = useState<'selfie' | 'ineFront' | 'ineBack' | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [verificationResult, setVerificationResult] = useState<{ success: boolean; message: string } | null>(null);
     const [error, setError] = useState<string>('');
     const { addNotification } = useNotification();
-
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-
-    const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-            setIsCameraOn(true);
-        } catch (err) {
-            console.error("Error accessing camera:", err);
-            setError("No se pudo acceder a la cámara. Asegúrate de haber otorgado los permisos.");
-        }
-    };
-
-    const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-        setIsCameraOn(false);
-    };
-    
-    useEffect(() => {
-        return () => {
-          // Cleanup camera on component unmount
-          stopCamera();
-        };
-    }, []);
 
     const handleDataSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,30 +120,15 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
         setStep(2);
     };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fileType: 'ineFront' | 'ineBack') => {
-        const file = e.target.files?.[0];
-        if (file) {
-            try {
-                const base64 = await fileToBase64(file);
-                if (fileType === 'ineFront') setIneFront(base64);
-                else setIneBack(base64);
-            } catch (err) {
-                setError('Error al procesar la imagen.');
-            }
+    const handlePhotoCaptured = (imageData: string) => {
+        if (cameraFor === 'selfie') {
+            setSelfie(imageData);
+        } else if (cameraFor === 'ineFront') {
+            setIneFront(imageData);
+        } else if (cameraFor === 'ineBack') {
+            setIneBack(imageData);
         }
-    };
-    
-    const takeSelfie = () => {
-        if (videoRef.current && canvasRef.current) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const dataUrl = canvas.toDataURL('image/jpeg');
-            setSelfie(dataUrl.split(',')[1]);
-            stopCamera();
-        }
+        setCameraFor(null);
     };
 
     const handleVerification = async () => {
@@ -190,36 +218,29 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
         <div className="space-y-8">
             {/* Selfie Section */}
             <div className="text-center p-4 border rounded-lg">
-                <h3 className="font-semibold text-lg flex items-center justify-center"><CameraIcon className="w-6 h-6 mr-2 text-secondary"/> Tómate una Selfie</h3>
-                {isCameraOn ? (
-                    <div className="my-4">
-                        <video ref={videoRef} autoPlay className="w-full max-w-sm mx-auto rounded-lg"></video>
-                        <button onClick={takeSelfie} className="mt-4 bg-primary text-white font-semibold py-2 px-4 rounded-md">Capturar Foto</button>
-                    </div>
-                ) : selfie ? (
+                <h3 className="font-semibold text-lg flex items-center justify-center"><CameraIcon className="w-6 h-6 mr-2 text-secondary"/> 1. Tómate una Selfie</h3>
+                {selfie ? (
                      <div className="my-4 relative inline-block">
                         <img src={`data:image/jpeg;base64,${selfie}`} alt="Selfie" className="w-40 h-40 object-cover rounded-full mx-auto border-4 border-green-500"/>
                         <CheckCircleIcon className="w-8 h-8 text-white bg-green-500 rounded-full absolute bottom-2 right-2"/>
                     </div>
                 ) : (
                     <div className="my-4">
-                        <button onClick={startCamera} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md">Activar Cámara</button>
+                        <button onClick={() => setCameraFor('selfie')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md">Activar Cámara Frontal</button>
                     </div>
                 )}
             </div>
             {/* INE Upload Section */}
             <div className="text-center p-4 border rounded-lg">
-                 <h3 className="font-semibold text-lg flex items-center justify-center"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> Sube tu INE</h3>
+                 <h3 className="font-semibold text-lg flex items-center justify-center"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> 2. Fotografía tu INE</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                     <div className="flex flex-col items-center">
-                        <label htmlFor="ine-front" className="cursor-pointer bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md flex items-center"><UploadIcon className="w-5 h-5 mr-2"/>Frente</label>
-                        <input id="ine-front" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'ineFront')}/>
-                        {ineFront && <img src={`data:image/jpeg;base64,${ineFront}`} className="mt-2 h-24 rounded-lg border-2 border-green-500"/>}
+                        <button onClick={() => setCameraFor('ineFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md flex items-center w-full justify-center"><CameraIcon className="w-5 h-5 mr-2"/>Frente</button>
+                        {ineFront && <img src={`data:image/jpeg;base64,${ineFront}`} alt="INE Frente" className="mt-2 h-24 rounded-lg border-2 border-green-500"/>}
                     </div>
                      <div className="flex flex-col items-center">
-                        <label htmlFor="ine-back" className="cursor-pointer bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md flex items-center"><UploadIcon className="w-5 h-5 mr-2"/>Reverso</label>
-                        <input id="ine-back" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'ineBack')}/>
-                        {ineBack && <img src={`data:image/jpeg;base64,${ineBack}`} className="mt-2 h-24 rounded-lg border-2 border-green-500"/>}
+                        <button onClick={() => setCameraFor('ineBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md flex items-center w-full justify-center"><CameraIcon className="w-5 h-5 mr-2"/>Reverso</button>
+                        {ineBack && <img src={`data:image/jpeg;base64,${ineBack}`} alt="INE Reverso" className="mt-2 h-24 rounded-lg border-2 border-green-500"/>}
                     </div>
                  </div>
             </div>
@@ -264,6 +285,13 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     
     return (
         <>
+            {cameraFor && (
+                <CameraModal 
+                    facingMode={cameraFor === 'selfie' ? 'user' : 'environment'}
+                    onCapture={handlePhotoCaptured}
+                    onClose={() => setCameraFor(null)}
+                />
+            )}
             <div className="bg-white min-h-full py-12">
                 <div className="container mx-auto px-6 max-w-2xl">
                      <div className="text-center">
@@ -295,7 +323,6 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                     </div>
                 </div>
             </div>
-            <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
         </>
     );
 };
@@ -308,7 +335,7 @@ const CameraIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 const UploadIcon: React.FC<{className?: string}> = ({ className }) => (
-     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+     <svg xmlns="http://www.w.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
     </svg>
 );
