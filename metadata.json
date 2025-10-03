@@ -1,0 +1,7 @@
+{
+  "name": "Mi Auto App - Renta de Autos",
+  "description": "Una aplicación web para encontrar y rentar autos de manera fácil y rápida. Explora nuestra flota, elige las fechas y reserva tu vehículo ideal para tu próximo viaje.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
