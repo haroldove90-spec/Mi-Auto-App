@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -12,17 +12,24 @@ import BottomNav from './components/BottomNav';
 import NotificationContainer from './components/NotificationContainer';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
-import HomePage from './pages/HomePage';
-import BookingsPage from './pages/BookingsPage';
-import MyCarsPage from './pages/MyCarsPage';
-import ProfilePage from './pages/ProfilePage';
-import AdminPage from './pages/AdminPage';
-import LoginPage from './pages/LoginPage';
-import StaticPage from './pages/StaticPage';
-import ContactPage from './pages/ContactPage';
-import LessorOnboardingPage from './pages/LessorOnboardingPage';
-import VehicleDetailPage from './pages/VehicleDetailPage';
-import RegisterClientPage from './pages/RegisterClientPage';
+// --- Dynamic Imports for Code-Splitting ---
+const HomePage = lazy(() => import('./pages/HomePage'));
+const BookingsPage = lazy(() => import('./pages/BookingsPage'));
+const MyCarsPage = lazy(() => import('./pages/MyCarsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const StaticPage = lazy(() => import('./pages/StaticPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const LessorOnboardingPage = lazy(() => import('./pages/LessorOnboardingPage'));
+const VehicleDetailPage = lazy(() => import('./pages/VehicleDetailPage'));
+const RegisterClientPage = lazy(() => import('./pages/RegisterClientPage'));
+
+const LoadingSpinner: React.FC = () => (
+  <div className="flex justify-center items-center flex-grow py-20">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
 
 const AppContent: React.FC = () => {
   const { user, role } = useAuth();
@@ -75,22 +82,27 @@ const AppContent: React.FC = () => {
   };
   
   if (!user) {
-    switch (currentPage) {
-      case 'register-client':
-        return <RegisterClientPage onNavigate={onNavigate} />;
-      case 'lessor-onboarding':
-        return <LessorOnboardingPage onNavigate={onNavigate} />;
-      // Allow access to some static pages even when not logged in
-      case 'how-it-works':
-        return <StaticPage title="Cómo Funciona" content={contentHowItWorks}/>;
-      case 'terms':
-        return <StaticPage title="Términos y Condiciones" content={contentTerms}/>;
-       case 'privacy-policy':
-        return <StaticPage title="Política de Privacidad" content={contentPrivacyPolicy}/>;
-      default:
-        // Any other page will default to the login screen
-        return <LoginPage onNavigate={onNavigate} />;
-    }
+    // Wrap unauthenticated routes in Suspense as well
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+            {(() => {
+                switch (currentPage) {
+                    case 'register-client':
+                        return <RegisterClientPage onNavigate={onNavigate} />;
+                    case 'lessor-onboarding':
+                        return <LessorOnboardingPage onNavigate={onNavigate} />;
+                    case 'how-it-works':
+                        return <StaticPage title="Cómo Funciona" content={contentHowItWorks}/>;
+                    case 'terms':
+                        return <StaticPage title="Términos y Condiciones" content={contentTerms}/>;
+                    case 'privacy-policy':
+                        return <StaticPage title="Política de Privacidad" content={contentPrivacyPolicy}/>;
+                    default:
+                        return <LoginPage onNavigate={onNavigate} />;
+                }
+            })()}
+        </Suspense>
+    );
   }
   
   const renderPage = () => {
@@ -129,8 +141,10 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen font-sans text-gray-800 pb-16 md:pb-0">
       <Header onNavigate={onNavigate} />
-      <main className="flex-grow">
-        {renderPage()}
+      <main className="flex-grow flex flex-col">
+        <Suspense fallback={<LoadingSpinner />}>
+          {renderPage()}
+        </Suspense>
       </main>
       <Footer onNavigate={onNavigate} />
       <BottomNav activePage={currentPage} onNavigate={onNavigate} />
