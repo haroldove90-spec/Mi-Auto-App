@@ -87,7 +87,7 @@ const ProfilePage: React.FC = () => {
                             </span>
                             <div className="flex items-center text-yellow-500">
                                 <StarIcon className="w-4 h-4 mr-1"/>
-                                <span className="font-bold">{user.averageRating.toFixed(1)}</span>
+                                <span className="font-bold">{(user.averageRating || 0).toFixed(1)}</span>
                             </div>
                         </div>
                     </div>

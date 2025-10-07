@@ -68,7 +68,7 @@ const VehicleDetailPage: React.FC<{ onNavigate: (page: Page) => void; }> = ({ on
                         <div className="flex items-center space-x-4 text-gray-600 mt-2">
                             <div className="flex items-center">
                                 <StarIcon className="w-5 h-5 text-yellow-400 mr-1"/>
-                                <span className="font-bold">{vehicle.averageRating.toFixed(1)}</span>
+                                <span className="font-bold">{(vehicle.averageRating || 0).toFixed(1)}</span>
                                 <span className="ml-1">({vehicleReviews.length} reseñas)</span>
                             </div>
                             <span>·</span>

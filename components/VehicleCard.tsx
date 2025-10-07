@@ -27,7 +27,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
         <div className="absolute top-2 right-2 bg-primary/80 text-white text-xs font-bold px-2 py-1 rounded">{vehicle.specs.type}</div>
          <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md flex items-center">
             <StarIcon className="w-4 h-4 text-yellow-400 mr-1"/>
-            <span className="text-sm font-bold">{vehicle.averageRating.toFixed(1)}</span>
+            <span className="text-sm font-bold">{(vehicle.averageRating || 0).toFixed(1)}</span>
         </div>
       </div>
       <div className="p-4 flex flex-col flex-grow">
