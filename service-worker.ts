@@ -3,7 +3,6 @@ const CACHE_NAME = 'mi-auto-app-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/index.tsx', // The build system will likely resolve this to the final JS file
   '/favicon.svg',
   // Note: We don't cache Tailwind CDN as it's external and handled by the browser cache.
   // We should also avoid caching API calls here unless we have a sophisticated strategy.
