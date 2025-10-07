@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -10,6 +10,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
 import NotificationContainer from './components/NotificationContainer';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import HomePage from './pages/HomePage';
 import BookingsPage from './pages/BookingsPage';
@@ -25,7 +26,48 @@ import RegisterClientPage from './pages/RegisterClientPage';
 
 const AppContent: React.FC = () => {
   const { user, role } = useAuth();
-  const [currentPage, setCurrentPage] = useState<Page>(user ? 'home' : 'home'); // Default to home, which login page will catch if not logged in
+  const [currentPage, setCurrentPage] = useState<Page>(user ? 'home' : 'home');
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Only show prompt if not dismissed recently
+      if (!sessionStorage.getItem('pwaInstallDismissed')) {
+         setShowInstallPrompt(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+        // @ts-ignore
+      deferredPrompt.prompt();
+      // @ts-ignore
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the A2HS prompt');
+      } else {
+        console.log('User dismissed the A2HS prompt');
+      }
+      setDeferredPrompt(null);
+      setShowInstallPrompt(false);
+    }
+  };
+  
+  const handleDismissInstall = () => {
+    sessionStorage.setItem('pwaInstallDismissed', 'true');
+    setShowInstallPrompt(false);
+  }
+
 
   const onNavigate = (page: Page) => {
     window.scrollTo(0, 0);
@@ -93,6 +135,11 @@ const AppContent: React.FC = () => {
       <Footer onNavigate={onNavigate} />
       <BottomNav activePage={currentPage} onNavigate={onNavigate} />
       <NotificationContainer />
+      <PWAInstallPrompt 
+        show={showInstallPrompt} 
+        onInstall={handleInstall} 
+        onDismiss={handleDismissInstall} 
+      />
     </div>
   );
 };

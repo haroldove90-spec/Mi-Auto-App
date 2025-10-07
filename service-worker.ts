@@ -14,7 +14,8 @@ const urlsToCache = [
   'https://miautoapp.com.mx/wp-content/uploads/2025/10/Chevrolet-Suburban.png',
   'https://miautoapp.com.mx/wp-content/uploads/2025/10/Tesla-Model-3.png',
   'https://miautoapp.com.mx/wp-content/uploads/2025/10/porshe.png',
-  'https://miautoapp.com.mx/wp-content/uploads/2025/06/Mi-Auto-App-transparente.png'
+  'https://miautoapp.com.mx/wp-content/uploads/2025/06/Mi-Auto-App-transparente.png',
+  'https://miautoapp.com.mx/miautoapp.png' // New icon for install prompt
 ];
 
 self.addEventListener('install', (event: any) => {
