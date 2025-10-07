@@ -47,7 +47,12 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         </a>
       )}
       <div className="relative" ref={profileMenuRef}>
-        <button onClick={() => setProfileMenuOpen(!isProfileMenuOpen)} className="flex items-center space-x-2 text-gray-200 hover:text-white">
+        <button 
+          onClick={() => setProfileMenuOpen(!isProfileMenuOpen)} 
+          className="flex items-center space-x-2 text-gray-200 hover:text-white"
+          aria-expanded={isProfileMenuOpen}
+          aria-haspopup="true"
+        >
           <UserCircleIcon className="w-8 h-8"/>
           <span className="font-semibold">{user?.name}</span>
         </button>
@@ -100,7 +105,12 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           <img src={logoUrl} alt="Mi Auto App Logo" className="h-10" />
         </a>
         {renderDesktopNav()}
-        <button className="md:hidden text-gray-200 hover:text-white" onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}>
+        <button 
+          className="md:hidden text-gray-200 hover:text-white" 
+          onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Abrir menú de navegación"
+          aria-expanded={isMobileMenuOpen}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
           </svg>

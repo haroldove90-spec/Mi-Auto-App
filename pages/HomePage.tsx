@@ -1,49 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Hero from '../components/Hero';
 import VehicleList from '../components/VehicleList';
-import BookingModal from '../components/BookingModal';
 import { Vehicle, Page } from '../types';
 import { useVehicle } from '../contexts/VehicleContext';
+import VehicleFilters from '../components/VehicleFilters';
 
 interface HomePageProps {
     onNavigate: (page: Page) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
-  const { vehicles } = useVehicle();
-  const [displayedVehicles, setDisplayedVehicles] = useState<Vehicle[]>(vehicles);
+  const { vehicles, selectVehicle } = useVehicle();
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-
-  // Update displayed vehicles if the main list changes (e.g., a car is added/deleted)
-  useEffect(() => {
-    setDisplayedVehicles(vehicles);
-  }, [vehicles]);
   
+  const [filters, setFilters] = useState({
+    type: 'all',
+    price: 'any',
+    transmission: 'all',
+    fuel: 'all',
+  });
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setIsSearching(true);
+    setTimeout(() => setIsSearching(false), 500);
+  };
+
+  const resetFilters = () => {
+    setFilters({ type: 'all', price: 'any', transmission: 'all', fuel: 'all' });
+    setIsSearching(true);
+    setTimeout(() => setIsSearching(false), 500);
+  };
+  
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter(vehicle => {
+      // Type filter
+      if (filters.type !== 'all' && vehicle.specs.type !== filters.type) {
+        return false;
+      }
+      // Transmission filter
+      if (filters.transmission !== 'all' && vehicle.specs.transmission !== filters.transmission) {
+        return false;
+      }
+      // Fuel filter
+      if (filters.fuel !== 'all' && vehicle.specs.fuel !== filters.fuel) {
+        return false;
+      }
+      // Price filter
+      if (filters.price !== 'any') {
+        const maxPrice = parseInt(filters.price, 10);
+        if (vehicle.pricePerDay > maxPrice) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [vehicles, filters]);
+
+
   const handleSearch = () => {
     setIsSearching(true);
-    // Simulate API call with search filters
     setTimeout(() => {
-        // In a real app, you would filter based on search criteria from Hero component
-        // For this demo, we'll just shuffle the list to show a change
-        setDisplayedVehicles([...vehicles].sort(() => Math.random() - 0.5));
         setIsSearching(false);
     }, 1000);
   };
   
-  const handleRentNow = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
+  const handleViewDetails = (vehicleId: number) => {
+    selectVehicle(vehicleId);
+    onNavigate('vehicle-detail');
   };
 
-  const handleCloseModal = () => {
-    setSelectedVehicle(null);
-  };
 
   return (
     <>
       <Hero onSearch={handleSearch} />
-      <VehicleList vehicles={displayedVehicles} onRentNow={handleRentNow} isSearching={isSearching} />
-      {selectedVehicle && <BookingModal vehicle={selectedVehicle} onClose={handleCloseModal} onNavigate={onNavigate as (page: 'bookings') => void} />}
+      <VehicleFilters 
+        vehicles={vehicles} 
+        filters={filters} 
+        onFilterChange={handleFilterChange}
+        onReset={resetFilters}
+      />
+      <VehicleList vehicles={filteredVehicles} onViewDetails={handleViewDetails} isSearching={isSearching} />
     </>
   );
 };

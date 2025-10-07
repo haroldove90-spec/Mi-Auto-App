@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Vehicle } from '../types';
 import VehicleCard from './VehicleCard';
@@ -6,7 +5,7 @@ import { CarIcon } from './icons/CarIcon';
 
 interface VehicleListProps {
   vehicles: Vehicle[];
-  onRentNow: (vehicle: Vehicle) => void;
+  onViewDetails: (vehicleId: number) => void;
   isSearching: boolean;
 }
 
@@ -21,7 +20,7 @@ const SkeletonCard: React.FC = () => (
     </div>
 );
 
-const VehicleList: React.FC<VehicleListProps> = ({ vehicles, onRentNow, isSearching }) => {
+const VehicleList: React.FC<VehicleListProps> = ({ vehicles, onViewDetails, isSearching }) => {
   return (
     <section id="vehicles" className="py-12 md:py-20 bg-slate-100">
       <div className="container mx-auto px-6">
@@ -38,7 +37,7 @@ const VehicleList: React.FC<VehicleListProps> = ({ vehicles, onRentNow, isSearch
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {vehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} onRentNow={onRentNow} />
+              <VehicleCard key={vehicle.id} vehicle={vehicle} onViewDetails={onViewDetails} />
             ))}
           </div>
         )}

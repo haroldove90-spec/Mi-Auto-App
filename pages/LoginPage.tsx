@@ -10,6 +10,7 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
+  const [view, setView] = useState<'welcome' | 'login'>('welcome');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,8 +30,44 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     }
   };
 
-  return (
+  const renderWelcomeView = () => (
+    <div className="min-h-screen bg-cover bg-center text-white flex flex-col" style={{ backgroundImage: "url('https://picsum.photos/seed/welcome-road/1920/1080')" }}>
+      <div className="absolute inset-0 bg-black/60"></div>
+      <div className="relative z-10 container mx-auto px-6 flex flex-col flex-grow justify-center items-center text-center">
+        <img src={logoUrl} alt="Mi Auto App Logo" className="h-24 mb-6" />
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 drop-shadow-lg">Tu viaje, tu auto, tu libertad</h1>
+        <p className="text-lg md:text-xl max-w-2xl mb-10 drop-shadow-md">La plataforma comunitaria para rentar y ofrecer vehículos de forma segura y sencilla.</p>
+        
+        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
+          <button 
+            onClick={() => onNavigate('register-client')}
+            className="bg-secondary text-primary font-bold py-4 px-10 rounded-lg text-lg hover:brightness-90 transition-all transform hover:scale-105 shadow-xl"
+          >
+            Buscar un Viaje
+          </button>
+          <button 
+            onClick={() => onNavigate('lessor-onboarding')}
+            className="bg-transparent border-2 border-secondary text-secondary font-bold py-4 px-10 rounded-lg text-lg hover:bg-secondary hover:text-primary transition-all transform hover:scale-105 shadow-xl"
+          >
+            Ofrecer mi Auto
+          </button>
+        </div>
+
+        <button onClick={() => setView('login')} className="mt-12 text-gray-300 hover:text-white underline transition-colors">
+            ¿Ya tienes una cuenta? Inicia Sesión
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderLoginView = () => (
     <div className="min-h-screen bg-primary flex flex-col justify-center items-center p-4">
+       <button onClick={() => setView('welcome')} className="absolute top-6 left-6 text-white hover:text-secondary flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Volver</span>
+        </button>
         <div className="text-center mb-8">
             <img src={logoUrl} alt="Mi Auto App Logo" className="h-20 mx-auto" />
         </div>
@@ -88,8 +125,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
               </button>
             </div>
           </form>
-           <div className="text-center mt-4">
-                <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('lessor-onboarding');}} className="text-sm text-primary hover:underline">¿Quieres rentar tu auto? Regístrate aquí</a>
+           <div className="text-center mt-4 space-y-1">
+                <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('register-client');}} className="text-sm text-primary hover:underline">¿No tienes cuenta? Regístrate aquí</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('lessor-onboarding');}} className="text-sm text-primary hover:underline block">¿Quieres rentar tu auto? Regístrate aquí</a>
             </div>
         </div>
       </div>
@@ -103,6 +141,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         </div>
     </div>
   );
+
+  return view === 'welcome' ? renderWelcomeView() : renderLoginView();
 };
 
 export default LoginPage;

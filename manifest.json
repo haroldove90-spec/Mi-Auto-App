@@ -1,0 +1,27 @@
+{
+  "short_name": "Mi Auto App",
+  "name": "Mi Auto App - Renta de Autos",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://miautoapp.com.mx/wp-content/uploads/2025/06/Mi-Auto-App-transparente.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://miautoapp.com.mx/wp-content/uploads/2025/06/Mi-Auto-App-transparente.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#081825",
+  "background_color": "#ffffff",
+  "description": "Una aplicación web para encontrar y rentar autos de manera fácil y rápida."
+}

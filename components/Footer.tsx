@@ -29,8 +29,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h3 className="font-bold mb-4 uppercase tracking-wider">Soporte</h3>
             <ul>
               <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('support'); }} className="hover:text-secondary transition-colors">Soporte</a></li>
-              <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('support'); }} className="hover:text-secondary transition-colors">Contáctanos</a></li>
+              <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('contact'); }} className="hover:text-secondary transition-colors">Contáctanos</a></li>
               <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('terms'); }} className="hover:text-secondary transition-colors">Términos y Condiciones</a></li>
+              <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('privacy-policy'); }} className="hover:text-secondary transition-colors">Política de Privacidad</a></li>
             </ul>
           </div>
           <div>

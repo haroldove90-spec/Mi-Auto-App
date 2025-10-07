@@ -1,11 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
-import { Vehicle } from '../types';
+import { Vehicle, Page } from '../types';
 import { useBooking } from '../contexts/BookingContext';
-import { useAuth } from '../contexts/AuthContext';
-import { CalendarIcon } from './icons/CalendarIcon';
-import { UserCircleIcon } from './icons/UserCircleIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import Calendar from './Calendar';
 
 interface BookingModalProps {
   vehicle: Vehicle | null;
@@ -14,57 +11,56 @@ interface BookingModalProps {
 }
 
 const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigate }) => {
-  const { createBooking } = useBooking();
-  const { user } = useAuth();
+  const { bookings, requestBooking } = useBooking();
   
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [clientName, setClientName] = useState(user?.name || '');
-  const [clientEmail, setClientEmail] = useState(`${user?.username}@example.com` || '');
-  const [clientPhone, setClientPhone] = useState('');
-  
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [modalStep, setModalStep] = useState(1);
 
   if (!vehicle) return null;
 
+  const bookedDates = useMemo(() => {
+    if (!vehicle) return new Set<string>();
+
+    const dates = new Set<string>();
+    const bookingsForVehicle = bookings.filter(
+      (b) => b.vehicleId === vehicle.id && (b.status === 'confirmed' || b.status === 'pending')
+    );
+
+    bookingsForVehicle.forEach((booking) => {
+      // Use UTC to avoid timezone issues with date calculations
+      let currentDate = new Date(booking.startDate + 'T00:00:00');
+      const stopDate = new Date(booking.endDate + 'T00:00:00');
+
+      while (currentDate <= stopDate) {
+        dates.add(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+    return dates;
+  }, [bookings, vehicle]);
+
   const totalDays = useMemo(() => {
+    setError('');
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
     const end = new Date(endDate);
-    if (start >= end) return 0;
+    if (start > end) {
+        setError('La fecha de devolución debe ser posterior a la de recogida.');
+        return 0;
+    };
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include the start day
     return diffDays;
   }, [startDate, endDate]);
 
   const totalPrice = totalDays * vehicle.pricePerDay;
   
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!startDate || !endDate) {
-      setError('Por favor, selecciona las fechas de inicio y fin.');
-      return;
-    }
-    if (!clientName || !clientEmail || !clientPhone) {
-        setError('Por favor, completa todos tus datos personales.');
-        return;
-    }
-    if (totalDays <= 0) {
-      setError('La fecha de devolución debe ser posterior a la de recogida.');
-      return;
-    }
-    
-    createBooking({
-        vehicle,
-        startDate,
-        endDate,
-        clientName,
-        clientEmail,
-        clientPhone,
-    });
+  const handleBookingConfirmed = () => {
+      if(!startDate || !endDate) return;
+    requestBooking({ vehicle, startDate, endDate });
     setIsSuccess(true);
   };
 
@@ -73,94 +69,106 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
     onNavigate('bookings');
   }
   
+  const handleDatesSelected = (dates: { startDate: string | null; endDate: string | null }) => {
+    setStartDate(dates.startDate);
+    setEndDate(dates.endDate);
+  };
+
   const SuccessView = () => (
     <div className="text-center p-8">
         <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-primary mb-2">¡Reserva Confirmada!</h2>
-        <p className="text-gray-600 mb-6">Tu {vehicle.brand} {vehicle.name} te estará esperando. Revisa tu correo para más detalles.</p>
-        <p className="font-semibold text-lg mb-6">Pago Contra Entrega</p>
+        <p className="text-gray-600 mb-6">Tu reserva se ha realizado con éxito. El pago se hará al momento de recoger el vehículo.</p>
         <button 
             onClick={handleGoToBookings}
             className="w-full bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-opacity-90 transition-all text-lg">
-            Ver Mis Reservas
+            Ver Mis Viajes
         </button>
     </div>
   );
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg relative animate-fade-in-up overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-lg relative animate-fade-in-up overflow-hidden" 
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="booking-modal-title"
+      >
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
-           <svg xmlns="http://www.w.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
            </svg>
         </button>
         
         {isSuccess ? <SuccessView/> : (
         <div className="p-6">
-            <h2 className="text-2xl font-bold text-primary mb-2">Confirmar Reserva</h2>
-            <p className="text-gray-600 mb-6">Estás a punto de reservar el <span className="font-semibold">{vehicle.brand} {vehicle.name}</span>.</p>
-            
-            <div className="flex items-start space-x-4 mb-6">
-                <img src={vehicle.imageUrl} alt={vehicle.name} className="w-40 h-28 object-cover rounded-lg" />
-                <div>
-                    <h3 className="text-lg font-bold">{vehicle.brand} {vehicle.name}</h3>
-                    <p className="text-xl font-extrabold text-primary">${vehicle.pricePerDay}<span className="text-sm font-normal text-gray-500">/día</span></p>
-                </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
+          {modalStep === 1 && (
+            <>
+              <h2 id="booking-modal-title" className="text-2xl font-bold text-primary mb-2">Selecciona las Fechas</h2>
+              <p className="text-gray-600 mb-6">Elige el rango de días para rentar el <span className="font-semibold">{vehicle.brand} {vehicle.name}</span>.</p>
+              
+              <div className="space-y-6">
                 <div>
                     <h4 className="font-semibold text-primary border-b pb-2 mb-4">Fechas de Renta</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">Recogida</label>
-                        <div className="relative">
-                        <CalendarIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
-                        <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
-                        </div>
-                    </div>
-                    <div>
-                        <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">Devolución</label>
-                        <div className="relative">
-                        <CalendarIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
-                        <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
-                        </div>
-                    </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 className="font-semibold text-primary border-b pb-2 mb-4">Datos Personales</h4>
-                    <div className="space-y-4">
-                         <div>
-                            <label htmlFor="client-name" className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-                            <input type="text" id="client-name" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Tu nombre" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
-                        </div>
-                         <div>
-                            <label htmlFor="client-email" className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                            <input type="email" id="client-email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="tu@email.com" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
-                        </div>
-                         <div>
-                            <label htmlFor="client-phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                            <input type="tel" id="client-phone" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="10 dígitos" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
-                        </div>
-                    </div>
+                    <Calendar bookedDates={bookedDates} onDateChange={handleDatesSelected} />
                 </div>
                 
-                {totalPrice > 0 && (
-                    <div className="bg-slate-100 p-4 rounded-lg text-right">
-                        <p className="text-gray-600">Total por {totalDays} día(s):</p>
-                        <p className="text-2xl font-bold text-primary">${totalPrice.toLocaleString()}</p>
-                    </div>
-                )}
-
                 {error && <p className="text-red-500 text-sm text-center font-semibold bg-red-100 p-3 rounded-md">{error}</p>}
                 
-                <button type="submit" className="w-full bg-accent text-primary font-bold py-3 px-6 rounded-md hover:brightness-90 transition-all text-lg">
-                    Confirmar Reserva
-                </button>
-            </form>
+                <div className="mt-4 pt-4 border-t">
+                    <button 
+                        onClick={() => setModalStep(2)} 
+                        disabled={!startDate || !endDate || totalDays <= 0 || !!error}
+                        className="w-full bg-accent text-primary font-bold py-3 px-6 rounded-md hover:brightness-90 transition-all text-lg disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    >
+                        Continuar
+                    </button>
+                </div>
+              </div>
+            </>
+          )}
+          {modalStep === 2 && (
+             <>
+              <h2 id="booking-modal-title" className="text-2xl font-bold text-primary mb-2">Confirmar Reserva</h2>
+              <p className="text-gray-600 mb-6">Revisa los detalles y confirma tu reserva.</p>
+              
+              <div className="space-y-6">
+                  {totalPrice > 0 && (
+                      <div className="bg-slate-100 p-4 rounded-lg animate-fade-in-up">
+                         <div className="flex justify-between items-center text-gray-600 text-sm">
+                             <span>${vehicle.pricePerDay.toLocaleString()} x {totalDays} día(s)</span>
+                             <span>${(totalDays * vehicle.pricePerDay).toLocaleString()}</span>
+                         </div>
+                          <div className="flex justify-between items-center text-gray-600 text-sm mt-1">
+                             <span>Tarifa de servicio</span>
+                             <span>$0</span>
+                         </div>
+                         <div className="flex justify-between items-center font-bold text-primary mt-2 pt-2 border-t">
+                             <span>Total a pagar (MXN)</span>
+                             <span>${totalPrice.toLocaleString()}</span>
+                         </div>
+                      </div>
+                  )}
+
+                  <div className="mt-4">
+                      <button
+                        onClick={handleBookingConfirmed}
+                        className="w-full bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-opacity-90 transition-all text-lg"
+                      >
+                          Confirmar Reserva (Pago Contra Entrega)
+                      </button>
+                  </div>
+
+                  <div className="mt-2 text-center">
+                      <button onClick={() => setModalStep(1)} className="text-sm text-gray-600 hover:underline">
+                          Volver a seleccionar fechas
+                      </button>
+                  </div>
+              </div>
+             </>
+          )}
         </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { CameraIcon } from '../components/icons/CameraIcon';
 import { UploadIcon } from '../components/icons/UploadIcon';
 import { IdIcon } from '../components/icons/IdIcon';
+import { CarIcon } from '../components/icons/CarIcon';
 
 // Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
@@ -103,8 +104,12 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     const [selfie, setSelfie] = useState<string | null>(null);
     const [ineFront, setIneFront] = useState<string | null>(null);
     const [ineBack, setIneBack] = useState<string | null>(null);
+    const [licenseFront, setLicenseFront] = useState<string | null>(null);
+    const [licenseBack, setLicenseBack] = useState<string | null>(null);
+    const [registrationCard, setRegistrationCard] = useState<string | null>(null);
+    const [insurance, setInsurance] = useState<string | null>(null);
     
-    const [cameraFor, setCameraFor] = useState<'selfie' | 'ineFront' | 'ineBack' | null>(null);
+    const [cameraFor, setCameraFor] = useState<'selfie' | 'ineFront' | 'ineBack' | 'licenseFront' | 'licenseBack' | 'registrationCard' | 'insurance' | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [verificationResult, setVerificationResult] = useState<{ success: boolean; message: string } | null>(null);
     const [error, setError] = useState<string>('');
@@ -121,19 +126,19 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     };
 
     const handlePhotoCaptured = (imageData: string) => {
-        if (cameraFor === 'selfie') {
-            setSelfie(imageData);
-        } else if (cameraFor === 'ineFront') {
-            setIneFront(imageData);
-        } else if (cameraFor === 'ineBack') {
-            setIneBack(imageData);
-        }
+        if (cameraFor === 'selfie') setSelfie(imageData);
+        else if (cameraFor === 'ineFront') setIneFront(imageData);
+        else if (cameraFor === 'ineBack') setIneBack(imageData);
+        else if (cameraFor === 'licenseFront') setLicenseFront(imageData);
+        else if (cameraFor === 'licenseBack') setLicenseBack(imageData);
+        else if (cameraFor === 'registrationCard') setRegistrationCard(imageData);
+        else if (cameraFor === 'insurance') setInsurance(imageData);
         setCameraFor(null);
     };
 
     const handleVerification = async () => {
-        if (!selfie || !ineFront || !ineBack) {
-            setError("Por favor, completa los tres requisitos: selfie, frente y reverso del INE.");
+        if (!selfie || !ineFront || !ineBack || !licenseFront || !licenseBack || !registrationCard || !insurance) {
+            setError("Por favor, proporciona todas las imágenes requeridas para la verificación.");
             return;
         }
         setError('');
@@ -142,13 +147,7 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const prompt = `Eres un sistema de verificación de identidad para una app de renta de autos. Analiza estas tres imágenes: una selfie, el frente de una credencial de elector mexicana (INE), y el reverso de la misma.
-            1. Compara el rostro de la selfie con la foto del INE. ¿Son la misma persona?
-            2. Extrae el nombre completo que aparece en el INE.
-            3. Compara si el nombre extraído del INE coincide con el nombre proporcionado por el usuario: "${formData.name}".
-            4. Basado en todo lo anterior, determina si la verificación es exitosa. La verificación es exitosa SOLO si el rostro coincide Y el nombre coincide.
-            
-            Responde únicamente con un JSON.`;
+            const prompt = `Eres un sistema avanzado de verificación de identidad y documentos para una app de renta de autos. Tu tarea es analizar un set de imágenes proporcionadas por un aspirante a arrendador y determinar si su perfil es legítimo y confiable. El usuario ha proporcionado el siguiente nombre: "${formData.name}". Las imágenes son: 1. Selfie del usuario. 2. Frente de una credencial de elector mexicana (INE). 3. Reverso de la misma credencial INE. 4. Frente de su licencia de conducir. 5. Reverso de su licencia de conducir. 6. Tarjeta de circulación del vehículo. 7. Póliza de seguro del vehículo. Realiza las siguientes verificaciones y responde ÚNICAMENTE con un objeto JSON: 1. Coincidencia Facial: Compara el rostro de la selfie con la foto del INE y la foto de la licencia de conducir. ¿Corresponden a la misma persona? 2. Coincidencia de Nombres: Extrae el nombre completo del INE y de la licencia de conducir. ¿Coinciden entre sí y con el nombre proporcionado por el usuario ("${formData.name}")? 3. Validez de Documentos: Analiza la apariencia de los documentos (INE, licencia, tarjeta de circulación, seguro). ¿Parecen ser documentos oficiales y válidos, sin signos evidentes de alteración digital o falsificación? 4. Consistencia de Vehículo: ¿Hay información consistente sobre el vehículo (como marca, modelo o placas) entre la tarjeta de circulación y la póliza de seguro? 5. Decisión Final: Basado en TODAS las verificaciones anteriores, determina si el proceso de verificación es exitoso. La verificación es exitosa SÓLO SI la coincidencia facial es positiva, los nombres coinciden, y los documentos parecen válidos. Responde con el siguiente formato JSON:`;
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
@@ -158,6 +157,10 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                         { inlineData: { mimeType: 'image/jpeg', data: selfie } },
                         { inlineData: { mimeType: 'image/jpeg', data: ineFront } },
                         { inlineData: { mimeType: 'image/jpeg', data: ineBack } },
+                        { inlineData: { mimeType: 'image/jpeg', data: licenseFront } },
+                        { inlineData: { mimeType: 'image/jpeg', data: licenseBack } },
+                        { inlineData: { mimeType: 'image/jpeg', data: registrationCard } },
+                        { inlineData: { mimeType: 'image/jpeg', data: insurance } },
                     ]
                 },
                 config: {
@@ -165,11 +168,14 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                     responseSchema: {
                         type: Type.OBJECT,
                         properties: {
-                            faceMatch: { type: Type.BOOLEAN },
-                            nameMatch: { type: Type.BOOLEAN },
-                            extractedName: { type: Type.STRING },
-                            isVerificationSuccessful: { type: Type.BOOLEAN },
-                            reason: { type: Type.STRING },
+                            faceMatch: { type: Type.BOOLEAN, description: '¿El rostro de la selfie coincide con los documentos?' },
+                            nameMatch: { type: Type.BOOLEAN, description: '¿El nombre en los documentos coincide con el nombre proporcionado?' },
+                            documentsLookValid: { type: Type.BOOLEAN, description: '¿Los documentos parecen auténticos y sin alteraciones?' },
+                            vehicleInfoConsistent: { type: Type.BOOLEAN, description: '¿La información del vehículo es consistente entre los documentos?' },
+                            isVerificationSuccessful: { type: Type.BOOLEAN, description: 'Decisión final basada en todas las verificaciones.' },
+                            reason: { type: Type.STRING, description: 'Una explicación concisa de la decisión, especialmente si falló (ej. "El rostro no coincide con el INE").' },
+                            extractedNameFromINE: { type: Type.STRING, description: 'Nombre completo extraído del INE.' },
+                            extractedNameFromLicense: { type: Type.STRING, description: 'Nombre completo extraído de la licencia.' },
                         }
                     }
                 }
@@ -215,34 +221,55 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     );
 
     const renderStep2 = () => (
-        <div className="space-y-8">
-            {/* Selfie Section */}
+        <div className="space-y-4">
             <div className="text-center p-4 border rounded-lg">
                 <h3 className="font-semibold text-lg flex items-center justify-center"><CameraIcon className="w-6 h-6 mr-2 text-secondary"/> 1. Tómate una Selfie</h3>
-                {selfie ? (
-                     <div className="my-4 relative inline-block">
-                        <img src={`data:image/jpeg;base64,${selfie}`} alt="Selfie" className="w-40 h-40 object-cover rounded-full mx-auto border-4 border-green-500"/>
-                        <CheckCircleIcon className="w-8 h-8 text-white bg-green-500 rounded-full absolute bottom-2 right-2"/>
-                    </div>
-                ) : (
-                    <div className="my-4">
-                        <button onClick={() => setCameraFor('selfie')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md">Activar Cámara Frontal</button>
-                    </div>
-                )}
+                <div className="my-2">
+                    <button onClick={() => setCameraFor('selfie')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md">Activar Cámara Frontal</button>
+                </div>
+                {selfie && <img src={`data:image/jpeg;base64,${selfie}`} alt="Selfie" className="w-24 h-24 object-cover rounded-full mx-auto border-4 border-green-500"/>}
             </div>
-            {/* INE Upload Section */}
-            <div className="text-center p-4 border rounded-lg">
-                 <h3 className="font-semibold text-lg flex items-center justify-center"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> 2. Fotografía tu INE</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+            
+            <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold text-lg flex items-center justify-center mb-2"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> 2. Fotografía tu INE</h3>
+                <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('ineFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md flex items-center w-full justify-center"><CameraIcon className="w-5 h-5 mr-2"/>Frente</button>
-                        {ineFront && <img src={`data:image/jpeg;base64,${ineFront}`} alt="INE Frente" className="mt-2 h-24 rounded-lg border-2 border-green-500"/>}
+                        <button onClick={() => setCameraFor('ineFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Frente</button>
+                        {ineFront && <img src={`data:image/jpeg;base64,${ineFront}`} alt="INE Frente" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
                     </div>
-                     <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('ineBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md flex items-center w-full justify-center"><CameraIcon className="w-5 h-5 mr-2"/>Reverso</button>
-                        {ineBack && <img src={`data:image/jpeg;base64,${ineBack}`} alt="INE Reverso" className="mt-2 h-24 rounded-lg border-2 border-green-500"/>}
+                    <div className="flex flex-col items-center">
+                        <button onClick={() => setCameraFor('ineBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Reverso</button>
+                        {ineBack && <img src={`data:image/jpeg;base64,${ineBack}`} alt="INE Reverso" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
                     </div>
-                 </div>
+                </div>
+            </div>
+            
+             <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold text-lg flex items-center justify-center mb-2"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> 3. Licencia de Conducir</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col items-center">
+                        <button onClick={() => setCameraFor('licenseFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Frente</button>
+                        {licenseFront && <img src={`data:image/jpeg;base64,${licenseFront}`} alt="Licencia Frente" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <button onClick={() => setCameraFor('licenseBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Reverso</button>
+                        {licenseBack && <img src={`data:image/jpeg;base64,${licenseBack}`} alt="Licencia Reverso" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold text-lg flex items-center justify-center mb-2"><CarIcon className="w-6 h-6 mr-2 text-secondary"/> 4. Documentos del Vehículo</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col items-center">
+                        <button onClick={() => setCameraFor('registrationCard')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Tarjeta de Circulación</button>
+                        {registrationCard && <img src={`data:image/jpeg;base64,${registrationCard}`} alt="Tarjeta de Circulación" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <button onClick={() => setCameraFor('insurance')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Póliza de Seguro</button>
+                        {insurance && <img src={`data:image/jpeg;base64,${insurance}`} alt="Póliza de Seguro" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                    </div>
+                </div>
             </div>
 
             {error && <p className="text-red-500 text-sm font-semibold text-center">{error}</p>}
@@ -275,10 +302,11 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
             <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-primary mb-2">¡Registro Completado!</h2>
             <p className="text-gray-600 mb-6">{verificationResult?.message || "Tu cuenta ha sido creada y verificada."}</p>
+            <p className="text-gray-600 mb-6">Ahora puedes iniciar sesión para agregar tus vehículos.</p>
             <button 
-                onClick={() => onNavigate('my-cars')}
+                onClick={() => onNavigate('home')}
                 className="w-full bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-opacity-90 transition-all text-lg">
-                Ir a Mis Autos
+                Ir a Iniciar Sesión
             </button>
         </div>
     );
@@ -326,25 +354,5 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
         </>
     );
 };
-
-// Add new icons needed for this page
-const CameraIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-);
-const UploadIcon: React.FC<{className?: string}> = ({ className }) => (
-     <svg xmlns="http://www.w.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-    </svg>
-);
-const IdIcon: React.FC<{className?: string}> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 012-2h2a2 2 0 012 2v1m-6 0h6" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 18v-1a2 2 0 00-2-2h-4a2 2 0 00-2 2v1" />
-    </svg>
-);
 
 export default LessorOnboardingPage;

@@ -4,7 +4,7 @@ import { BookingProvider } from './contexts/BookingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { VehicleProvider } from './contexts/VehicleContext';
 import { Page } from './types';
-import { contentHowItWorks, contentSupport, contentTerms } from './content';
+import { contentHowItWorks, contentSupport, contentTerms, contentPrivacyPolicy } from './content';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -20,10 +20,12 @@ import LoginPage from './pages/LoginPage';
 import StaticPage from './pages/StaticPage';
 import ContactPage from './pages/ContactPage';
 import LessorOnboardingPage from './pages/LessorOnboardingPage';
+import VehicleDetailPage from './pages/VehicleDetailPage';
+import RegisterClientPage from './pages/RegisterClientPage';
 
 const AppContent: React.FC = () => {
   const { user, role } = useAuth();
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPage] = useState<Page>(user ? 'home' : 'home'); // Default to home, which login page will catch if not logged in
 
   const onNavigate = (page: Page) => {
     window.scrollTo(0, 0);
@@ -31,7 +33,22 @@ const AppContent: React.FC = () => {
   };
   
   if (!user) {
-    return <LoginPage onNavigate={onNavigate} />;
+    switch (currentPage) {
+      case 'register-client':
+        return <RegisterClientPage onNavigate={onNavigate} />;
+      case 'lessor-onboarding':
+        return <LessorOnboardingPage onNavigate={onNavigate} />;
+      // Allow access to some static pages even when not logged in
+      case 'how-it-works':
+        return <StaticPage title="Cómo Funciona" content={contentHowItWorks}/>;
+      case 'terms':
+        return <StaticPage title="Términos y Condiciones" content={contentTerms}/>;
+       case 'privacy-policy':
+        return <StaticPage title="Política de Privacidad" content={contentPrivacyPolicy}/>;
+      default:
+        // Any other page will default to the login screen
+        return <LoginPage onNavigate={onNavigate} />;
+    }
   }
   
   const renderPage = () => {
@@ -39,8 +56,10 @@ const AppContent: React.FC = () => {
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={onNavigate} />;
+      case 'vehicle-detail':
+        return <VehicleDetailPage onNavigate={onNavigate} />;
       case 'bookings':
-        return role === 'cliente' ? <BookingsPage /> : <HomePage onNavigate={onNavigate} />;
+        return role === 'cliente' ? <BookingsPage onNavigate={onNavigate} /> : <HomePage onNavigate={onNavigate} />;
       case 'my-cars':
         return role === 'arrendador' ? <MyCarsPage /> : <HomePage onNavigate={onNavigate} />;
       case 'profile':
@@ -53,9 +72,12 @@ const AppContent: React.FC = () => {
         return <StaticPage title="Soporte" content={contentSupport}/>;
       case 'terms':
         return <StaticPage title="Términos y Condiciones" content={contentTerms}/>;
+      case 'privacy-policy':
+        return <StaticPage title="Política de Privacidad" content={contentPrivacyPolicy}/>;
       case 'contact':
         return <ContactPage />;
       case 'lessor-onboarding':
+        // This allows an existing 'cliente' to become a 'arrendador'
         return <LessorOnboardingPage onNavigate={onNavigate} />;
       default:
         return <HomePage onNavigate={onNavigate} />;
@@ -79,13 +101,13 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-        <NotificationProvider>
-            <VehicleProvider>
-                <BookingProvider>
-                    <AppContent />
-                </BookingProvider>
-            </VehicleProvider>
-        </NotificationProvider>
+      <NotificationProvider>
+        <VehicleProvider>
+          <BookingProvider>
+            <AppContent />
+          </BookingProvider>
+        </VehicleProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 };
