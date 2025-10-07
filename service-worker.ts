@@ -1,3 +1,6 @@
+// FIX: Add a triple-slash directive to include the 'webworker' lib. This provides the necessary TypeScript types for service worker events and globals, resolving the "Cannot find name" errors throughout this file.
+/// <reference lib="webworker" />
+
 // This is a basic service worker for caching static assets.
 const CACHE_NAME = 'mi-auto-app-cache-v1';
 const urlsToCache = [
@@ -19,8 +22,8 @@ const urlsToCache = [
 
 self.addEventListener('install', (event) => {
   // Perform install steps
-  // FIX: Cast event to ExtendableEvent to access waitUntil.
-  (event as ExtendableEvent).waitUntil(
+  // FIX: The `event` parameter is now correctly typed as `ExtendableEvent` thanks to the webworker lib reference. The explicit cast has been removed.
+  event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
@@ -30,16 +33,15 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // FIX: Cast event to FetchEvent to access respondWith and request.
-  const fetchEvent = event as FetchEvent;
-  fetchEvent.respondWith(
-    caches.match(fetchEvent.request)
+  // FIX: The `event` parameter is now correctly typed as `FetchEvent`. The cast and temporary variable `fetchEvent` have been removed for clarity.
+  event.respondWith(
+    caches.match(event.request)
       .then((response) => {
         // Cache hit - return response
         if (response) {
           return response;
         }
-        return fetch(fetchEvent.request);
+        return fetch(event.request);
       }
     )
   );
@@ -47,8 +49,8 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
-  // FIX: Cast event to ExtendableEvent to access waitUntil.
-  (event as ExtendableEvent).waitUntil(
+  // FIX: The `event` parameter is now correctly typed as `ExtendableEvent`. The explicit cast has been removed.
+  event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
