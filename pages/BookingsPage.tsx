@@ -20,12 +20,52 @@ const BookingCard: React.FC<{ booking: Booking; vehicle?: Vehicle; onReview: (bo
                 return 'bg-red-100 text-red-800';
         }
     }
+
+    const formatLocaleDate = (dateString: string) => {
+        return new Date(dateString + 'T00:00:00').toLocaleDateString('es-MX', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    };
     
-    if (!vehicle) return null;
+    // FIX: If a vehicle associated with a booking is deleted, show a fallback card
+    // instead of rendering nothing. This prevents the page from looking "broken".
+    if (!vehicle) {
+        return (
+             <div className="bg-white rounded-lg shadow-md overflow-hidden flex items-center p-4 border-2 border-dashed border-slate-300">
+                <div className="text-center flex-grow text-slate-500 w-full">
+                    <h3 className="text-lg font-bold">Vehículo no disponible</h3>
+                    <p className="text-sm mb-4">La información de este vehículo ya no está disponible.</p>
+                     <div className="grid grid-cols-2 gap-4 my-4 text-sm">
+                        <div>
+                            <p className="font-semibold">Recogida:</p>
+                            <p>{formatLocaleDate(booking.startDate)}</p>
+                        </div>
+                         <div>
+                            <p className="font-semibold">Devolución:</p>
+                            <p>{formatLocaleDate(booking.endDate)}</p>
+                        </div>
+                    </div>
+                    <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-200">
+                        <div>
+                            <p className="text-sm">Total:</p>
+                            <p className="text-lg font-extrabold">${booking.totalPrice.toLocaleString()}</p>
+                        </div>
+                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${getStatusChipClass(booking.status)} capitalize`}>{booking.status}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const imageUrl = vehicle.imageUrl && vehicle.imageUrl.length > 0 
+        ? vehicle.imageUrl[0] 
+        : `https://via.placeholder.com/300x200.png?text=${encodeURIComponent(vehicle.name)}`;
 
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col md:flex-row">
-            <img src={vehicle.imageUrl[0]} alt={vehicle.name} className="w-full md:w-1/3 h-48 md:h-auto object-cover md:flex-shrink-0" />
+            <img src={imageUrl} alt={vehicle.name} className="w-full md:w-1/3 h-48 md:h-auto object-cover md:flex-shrink-0" />
             <div className="p-4 flex flex-col flex-grow min-w-0">
                 <div>
                     <div className="flex justify-between items-start">
@@ -37,11 +77,11 @@ const BookingCard: React.FC<{ booking: Booking; vehicle?: Vehicle; onReview: (bo
                 <div className="grid grid-cols-2 gap-4 my-4 text-sm text-gray-700">
                     <div>
                         <p className="font-semibold">Recogida:</p>
-                        <p>{new Date(booking.startDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p>{formatLocaleDate(booking.startDate)}</p>
                     </div>
                      <div>
                         <p className="font-semibold">Devolución:</p>
-                        <p>{new Date(booking.endDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p>{formatLocaleDate(booking.endDate)}</p>
                     </div>
                 </div>
                 <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
