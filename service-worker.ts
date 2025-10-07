@@ -17,9 +17,10 @@ const urlsToCache = [
   'https://miautoapp.com.mx/miautoapp.png' // New icon for install prompt
 ];
 
-self.addEventListener('install', (event: any) => {
+self.addEventListener('install', (event) => {
   // Perform install steps
-  event.waitUntil(
+  // FIX: Cast event to ExtendableEvent to access waitUntil.
+  (event as ExtendableEvent).waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
@@ -28,23 +29,26 @@ self.addEventListener('install', (event: any) => {
   );
 });
 
-self.addEventListener('fetch', (event: any) => {
-  event.respondWith(
-    caches.match(event.request)
+self.addEventListener('fetch', (event) => {
+  // FIX: Cast event to FetchEvent to access respondWith and request.
+  const fetchEvent = event as FetchEvent;
+  fetchEvent.respondWith(
+    caches.match(fetchEvent.request)
       .then((response) => {
         // Cache hit - return response
         if (response) {
           return response;
         }
-        return fetch(event.request);
+        return fetch(fetchEvent.request);
       }
     )
   );
 });
 
-self.addEventListener('activate', (event: any) => {
+self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
+  // FIX: Cast event to ExtendableEvent to access waitUntil.
+  (event as ExtendableEvent).waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {

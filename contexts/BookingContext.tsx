@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Booking, Review, Vehicle } from '../types';
-import { BOOKINGS, REVIEWS } from '../constants';
+import { BOOKINGS as INITIAL_BOOKINGS, REVIEWS as INITIAL_REVIEWS } from '../constants';
 import { useNotification } from './NotificationContext';
 import { useAuth } from './AuthContext';
 
@@ -15,10 +15,47 @@ interface BookingContextType {
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [bookings, setBookings] = useState<Booking[]>(BOOKINGS);
-  const [reviews, setReviews] = useState<Review[]>(REVIEWS);
+    const getInitialBookings = () => {
+        try {
+            const storedBookings = localStorage.getItem('bookings');
+            return storedBookings ? JSON.parse(storedBookings) : INITIAL_BOOKINGS;
+        } catch (error) {
+            console.error("Failed to parse bookings from localStorage", error);
+            return INITIAL_BOOKINGS;
+        }
+    };
+    
+    const getInitialReviews = () => {
+        try {
+            const storedReviews = localStorage.getItem('reviews');
+            return storedReviews ? JSON.parse(storedReviews) : INITIAL_REVIEWS;
+        } catch (error) {
+            console.error("Failed to parse reviews from localStorage", error);
+            return INITIAL_REVIEWS;
+        }
+    };
+
+  const [bookings, setBookings] = useState<Booking[]>(getInitialBookings());
+  const [reviews, setReviews] = useState<Review[]>(getInitialReviews());
   const { addNotification } = useNotification();
   const { user } = useAuth();
+
+  useEffect(() => {
+    try {
+        localStorage.setItem('bookings', JSON.stringify(bookings));
+    } catch (error) {
+        console.error("Failed to save bookings to localStorage", error);
+    }
+  }, [bookings]);
+  
+  useEffect(() => {
+    try {
+        localStorage.setItem('reviews', JSON.stringify(reviews));
+    } catch (error) {
+        console.error("Failed to save reviews to localStorage", error);
+    }
+  }, [reviews]);
+
 
   const requestBooking = (details: { vehicle: Vehicle; startDate: string; endDate: string; }) => {
     if (!user) return;
