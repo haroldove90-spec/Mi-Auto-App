@@ -93,7 +93,7 @@ const BookingsPage: React.FC<{onNavigate: (page: 'home') => void}> = ({ onNaviga
   
   return (
     <>
-    <div className="bg-slate-100 min-h-full py-12">
+    <div className="bg-slate-100 flex-grow py-12">
       <div className="container mx-auto px-6">
         <h1 className="text-3xl md:text-4xl font-bold text-primary mb-8">Mis Viajes</h1>
         

@@ -7,7 +7,6 @@ interface PWAInstallPromptProps {
 }
 
 const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ show, onInstall, onDismiss }) => {
-    const [isIos, setIsIos] = useState(false);
     const [promptType, setPromptType] = useState<'install' | 'ios' | null>(null);
 
     useEffect(() => {
@@ -15,8 +14,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ show, onInstall, on
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
         if (isIosDevice && !isStandalone) {
-            setIsIos(true);
-            // Only show prompt if not dismissed recently
+            // Only show prompt if not dismissed recently in this session
             if (!sessionStorage.getItem('pwaInstallDismissed')) {
                 setPromptType('ios');
             }
@@ -29,37 +27,25 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ show, onInstall, on
     
     const handleDismiss = () => {
         sessionStorage.setItem('pwaInstallDismissed', 'true');
-        setPromptType(null);
+        setPromptType(null); // Hide prompt after dismissal
         onDismiss();
     };
 
     const IosInstructions: React.FC = () => (
-        <>
-            <p className="text-sm text-gray-200 mb-3">
-                Para la mejor experiencia, instala la app en tu pantalla de inicio.
+        <div className="flex-grow">
+            <h3 className="font-bold text-white mb-1">Instala la App</h3>
+            <p className="text-sm text-gray-300">
+                Toca <img src="https://img.icons8.com/ios-glyphs/20/ffffff/share-3.png" alt="Share Icon" className="inline h-5 w-5 mx-1"/> y luego "Agregar a la pantalla de inicio".
             </p>
-            <p className="text-sm text-gray-200">
-                Toca el ícono de <b className="font-bold">Compartir</b> y luego selecciona <b className="font-bold">"Agregar a la pantalla de inicio"</b>.
-            </p>
-             <button
-                onClick={handleDismiss}
-                className="absolute top-2 right-2 text-gray-400 hover:text-white"
-                aria-label="Cerrar"
-             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </>
+        </div>
     );
 
     const InstallButton: React.FC = () => (
-        <div className="flex-1">
+        <div className="flex-grow">
              <h3 className="font-bold text-white">Instala Mi Auto App</h3>
              <p className="text-sm text-gray-300">Acceso rápido y una mejor experiencia.</p>
         </div>
     );
-    
 
     if (!promptType) {
         return null;
@@ -72,13 +58,13 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ show, onInstall, on
             aria-labelledby="pwa-install-title"
             aria-modal="true"
         >
-            <div className="bg-primary/95 backdrop-blur-sm p-4 rounded-xl shadow-2xl max-w-md mx-auto flex items-center space-x-4">
-                <img src="https://miautoapp.com.mx/miautoapp.png" alt="Mi Auto App Icon" className="w-14 h-14" />
-                <div className="flex-grow">
-                   {promptType === 'install' ? <InstallButton /> : <IosInstructions />}
-                </div>
+            <div className="bg-primary/95 backdrop-blur-sm p-4 rounded-xl shadow-2xl max-w-md mx-auto flex items-center space-x-4 relative">
+                <img src="https://miautoapp.com.mx/miautoapp.png" alt="Mi Auto App Icon" className="w-14 h-14 flex-shrink-0" />
+                
+                {promptType === 'install' ? <InstallButton /> : <IosInstructions />}
+                
                  {promptType === 'install' && (
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 flex-shrink-0">
                          <button
                             onClick={handleDismiss}
                             className="text-sm text-gray-300 font-medium px-4 py-2 rounded-lg hover:bg-white/10"
@@ -92,6 +78,18 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ show, onInstall, on
                             Instalar
                         </button>
                     </div>
+                 )}
+
+                 {promptType === 'ios' && (
+                     <button
+                        onClick={handleDismiss}
+                        className="absolute top-1 right-1 text-gray-400 hover:text-white"
+                        aria-label="Cerrar"
+                     >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                  )}
             </div>
         </div>
