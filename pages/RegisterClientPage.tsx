@@ -96,7 +96,7 @@ const RegisterClientPage: React.FC<RegisterClientPageProps> = ({ onNavigate }) =
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="tel" name="phone" placeholder="Teléfono" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900" />
-                <input type="text" name="dateOfBirth" placeholder="Fecha de Nacimiento" onFocus={(e) => e.target.type='date'} onBlur={(e) => e.target.type='text'} value={formData.dateOfBirth} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900" />
+                <input type="text" name="dateOfBirth" placeholder="Fecha de Nacimiento" onFocus={(e) => e.target.type='date'} onBlur={(e) => { if(!e.target.value) e.target.type='text'; }} value={formData.dateOfBirth} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900" />
             </div>
             <input type="text" name="licenseNumber" placeholder="Número de Licencia de Conducir" value={formData.licenseNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900" />
 
