@@ -1,6 +1,6 @@
 // This is a basic service worker for caching static assets.
-const CACHE_NAME = 'mi-auto-app-cache-v1';
-const urlsToCache = [
+var CACHE_NAME = 'mi-auto-app-cache-v1';
+var urlsToCache = [
   '/',
   '/index.html',
   '/favicon.svg',
