@@ -1,10 +1,6 @@
-/// <reference lib="webworker" />
-
 // This is a basic service worker for caching static assets.
-// FIX: Changed `const` to `var` to avoid "Cannot redeclare block-scoped variable" error.
-var CACHE_NAME = 'mi-auto-app-cache-v1';
-// FIX: Changed `const` to `var` to avoid "Cannot redeclare block-scoped variable" error.
-var urlsToCache = [
+const CACHE_NAME = 'mi-auto-app-cache-v1';
+const urlsToCache = [
   '/',
   '/index.html',
   '/favicon.svg',
@@ -21,9 +17,9 @@ var urlsToCache = [
   'https://miautoapp.com.mx/miautoapp.png' // New icon for install prompt
 ];
 
-self.addEventListener('install', (event: Event) => {
+self.addEventListener('install', (event) => {
   // Perform install steps
-  (event as ExtendableEvent).waitUntil(
+  event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
@@ -32,23 +28,23 @@ self.addEventListener('install', (event: Event) => {
   );
 });
 
-self.addEventListener('fetch', (event: Event) => {
-  (event as FetchEvent).respondWith(
-    caches.match((event as FetchEvent).request)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
       .then((response) => {
         // Cache hit - return response
         if (response) {
           return response;
         }
-        return fetch((event as FetchEvent).request);
+        return fetch(event.request);
       }
     )
   );
 });
 
-self.addEventListener('activate', (event: Event) => {
+self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
-  (event as ExtendableEvent).waitUntil(
+  event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
