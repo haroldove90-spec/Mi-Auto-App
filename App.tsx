@@ -1,4 +1,5 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+
+import React, { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -36,6 +37,24 @@ const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(user ? 'home' : 'home');
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
+  const onNavigate = useCallback((page: Page) => {
+    window.scrollTo(0, 0);
+    setCurrentPage(page);
+  }, []);
+
+  useEffect(() => {
+    const handleNavigateEvent = (event: Event) => {
+        const customEvent = event as CustomEvent<Page>;
+        if (customEvent.detail) {
+            onNavigate(customEvent.detail);
+        }
+    };
+    window.addEventListener('navigate', handleNavigateEvent);
+    return () => {
+        window.removeEventListener('navigate', handleNavigateEvent);
+    };
+  }, [onNavigate]);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -75,11 +94,6 @@ const AppContent: React.FC = () => {
     setShowInstallPrompt(false);
   }
 
-
-  const onNavigate = (page: Page) => {
-    window.scrollTo(0, 0);
-    setCurrentPage(page);
-  };
   
   if (!user) {
     // Wrap unauthenticated routes in Suspense as well
