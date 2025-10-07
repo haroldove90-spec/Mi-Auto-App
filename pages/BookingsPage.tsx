@@ -25,8 +25,8 @@ const BookingCard: React.FC<{ booking: Booking; vehicle?: Vehicle; onReview: (bo
 
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col md:flex-row">
-            <img src={vehicle.imageUrl[0]} alt={vehicle.name} className="w-full md:w-1/3 h-48 md:h-auto object-cover" />
-            <div className="p-4 flex flex-col flex-grow">
+            <img src={vehicle.imageUrl[0]} alt={vehicle.name} className="w-full md:w-1/3 h-48 md:h-auto object-cover md:flex-shrink-0" />
+            <div className="p-4 flex flex-col flex-grow min-w-0">
                 <div>
                     <div className="flex justify-between items-start">
                         <h3 className="text-lg font-bold text-primary">{vehicle.brand} {vehicle.name}</h3>

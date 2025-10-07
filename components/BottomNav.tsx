@@ -19,7 +19,7 @@ const NavItem: React.FC<{
 }> = ({ icon, label, isActive, onClick }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center justify-center w-full pt-2 pb-1 transition-colors duration-200 ${
+    className={`flex flex-col items-center justify-center flex-1 pt-2 pb-1 transition-colors duration-200 ${
       isActive ? 'text-secondary' : 'text-gray-400'
     }`}
   >
@@ -88,7 +88,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activePage, onNavigate }) => {
   const navItems = getNavItems();
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-primary shadow-lg z-30 border-t border-gray-700">
+    <div 
+      className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-primary shadow-lg z-30 border-t border-gray-700"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="flex justify-around items-center h-full">
         {navItems.map((item) => (
           <NavItem

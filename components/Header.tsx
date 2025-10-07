@@ -98,7 +98,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   );
 
   return (
-    <header className="bg-primary shadow-md sticky top-0 z-40">
+    <header 
+      className="bg-primary shadow-md sticky top-0 z-40"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className="flex items-center">
           <img src={logoUrl} alt="Mi Auto App Logo" className="h-10" />

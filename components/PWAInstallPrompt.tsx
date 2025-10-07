@@ -10,10 +10,21 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ show, onInstall, on
     const [promptType, setPromptType] = useState<'install' | 'ios' | null>(null);
 
     useEffect(() => {
-        const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+        const isIosDevice = () => {
+            const userAgent = window.navigator.userAgent;
+            // Basic check for iPhone, iPad, iPod
+            if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+                return true;
+            }
+            // Check for iPad on iOS 13+ that may identify as a Mac
+            return (
+                navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+            );
+        };
+
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
-        if (isIosDevice && !isStandalone) {
+        if (isIosDevice() && !isStandalone) {
             // Only show prompt if not dismissed recently in this session
             if (!sessionStorage.getItem('pwaInstallDismissed')) {
                 setPromptType('ios');
