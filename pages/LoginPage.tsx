@@ -31,7 +31,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   };
 
   const renderWelcomeView = () => (
-    <div className="min-h-screen bg-cover bg-center text-white flex flex-col" style={{ backgroundImage: "url('https://picsum.photos/seed/welcome-road/1920/1080')" }}>
+    <div className="min-h-screen bg-cover bg-center text-white flex flex-col" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')" }}>
       <div className="absolute inset-0 bg-black/60"></div>
       <div className="relative z-10 container mx-auto px-6 flex flex-col flex-grow justify-center items-center text-center">
         <img src={logoUrl} alt="Mi Auto App Logo" className="h-24 mb-6" />

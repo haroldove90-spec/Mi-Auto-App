@@ -8,7 +8,7 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onSearch }) => {
   return (
-    <div className="relative h-[60vh] min-h-[450px] bg-cover bg-center" style={{ backgroundImage: "url('https://picsum.photos/seed/road/1920/1080')" }}>
+    <div className="relative h-[60vh] min-h-[450px] bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')" }}>
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="relative container mx-auto px-6 h-full flex flex-col justify-center items-start text-white">
         <h2 className="text-4xl md:text-6xl font-extrabold mb-4 drop-shadow-lg">Tu viaje, tu elección</h2>
