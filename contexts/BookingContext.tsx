@@ -23,7 +23,13 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
   const requestBooking = (details: { vehicle: Vehicle; startDate: string; endDate: string; }) => {
     if (!user) return;
     const { vehicle, startDate, endDate } = details;
-    const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24);
+    
+    // CRITICAL FIX: Ensure price calculation is consistent with BookingModal.
+    // The modal calculates total days inclusively (e.g., Mon to Wed is 3 days).
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     
     const newBooking: Booking = {
       id: Date.now(),
@@ -32,12 +38,12 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
       clientId: user.username,
       startDate,
       endDate,
-      totalPrice: Math.max(1, Math.ceil(days)) * vehicle.pricePerDay,
+      totalPrice: totalDays * vehicle.pricePerDay,
       status: 'confirmed', // The booking is confirmed automatically. Payment is handled on delivery.
     };
     
     setBookings(prev => [newBooking, ...prev]);
-    addNotification({ message: '¡Tu reserva ha sido confirmada!', type: 'success' });
+    addNotification({ message: '¡Reserva confirmada! El pago se realizará al recoger el vehículo.', type: 'success' });
   };
 
   const updateBookingStatus = (bookingId: number, status: Booking['status']) => {

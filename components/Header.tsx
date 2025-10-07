@@ -32,7 +32,6 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
   const commonLinks = [
     { label: 'Vehículos', page: 'home' as Page },
-    { label: 'Ofertas', page: 'home' as Page },
     { label: 'Contacto', page: 'contact' as Page },
   ];
 
