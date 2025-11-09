@@ -19,7 +19,7 @@ const VehicleContext = createContext<VehicleContextType | undefined>(undefined);
 
 export const VehicleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { addNotification } = useNotification();
-    const { user } = useAuth();
+    const { user, role } = useAuth();
     
     const getInitialState = () => {
         try {
@@ -58,7 +58,7 @@ export const VehicleProvider: React.FC<{ children: ReactNode }> = ({ children })
     const newVehicle: Vehicle = {
       ...vehicleData,
       id: Date.now(),
-      ownerId: user.username,
+      ownerId: role === 'admin' ? 'arrendador' : user.username,
       availability: [],
       averageRating: 0,
       imageUrl: [vehicleData.imageUrl], // Store as an array

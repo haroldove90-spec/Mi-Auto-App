@@ -110,6 +110,9 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     const [insurance, setInsurance] = useState<string | null>(null);
     
     const [cameraFor, setCameraFor] = useState<'selfie' | 'ineFront' | 'ineBack' | 'licenseFront' | 'licenseBack' | 'registrationCard' | 'insurance' | null>(null);
+    const [uploadFor, setUploadFor] = useState<'selfie' | 'ineFront' | 'ineBack' | 'licenseFront' | 'licenseBack' | 'registrationCard' | 'insurance' | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
     const [isLoading, setIsLoading] = useState(false);
     const [verificationResult, setVerificationResult] = useState<{ success: boolean; message: string } | null>(null);
     const [error, setError] = useState<string>('');
@@ -134,6 +137,33 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
         else if (cameraFor === 'registrationCard') setRegistrationCard(imageData);
         else if (cameraFor === 'insurance') setInsurance(imageData);
         setCameraFor(null);
+    };
+
+    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && uploadFor) {
+            try {
+                const base64Data = await fileToBase64(file);
+                if (uploadFor === 'selfie') setSelfie(base64Data);
+                else if (uploadFor === 'ineFront') setIneFront(base64Data);
+                else if (uploadFor === 'ineBack') setIneBack(base64Data);
+                else if (uploadFor === 'licenseFront') setLicenseFront(base64Data);
+                else if (uploadFor === 'licenseBack') setLicenseBack(base64Data);
+                else if (uploadFor === 'registrationCard') setRegistrationCard(base64Data);
+                else if (uploadFor === 'insurance') setInsurance(base64Data);
+            } catch (error) {
+                console.error("Error converting file to base64", error);
+                setError("Hubo un error al procesar el archivo.");
+            } finally {
+                setUploadFor(null);
+                if (e.target) e.target.value = ''; // Reset input to allow re-uploading same file
+            }
+        }
+    };
+
+    const triggerFileUpload = (type: typeof uploadFor) => {
+        setUploadFor(type);
+        fileInputRef.current?.click();
     };
 
     const handleVerification = async () => {
@@ -224,8 +254,9 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
         <div className="space-y-4">
             <div className="text-center p-4 border rounded-lg">
                 <h3 className="font-semibold text-lg flex items-center justify-center"><CameraIcon className="w-6 h-6 mr-2 text-secondary"/> 1. Tómate una Selfie</h3>
-                <div className="my-2">
-                    <button onClick={() => setCameraFor('selfie')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md">Activar Cámara Frontal</button>
+                <div className="my-2 flex justify-center space-x-2">
+                    <button onClick={() => setCameraFor('selfie')} className="flex-1 bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm flex items-center justify-center space-x-2 hover:bg-slate-300"><CameraIcon className="w-4 h-4" /><span>Usar Cámara</span></button>
+                    <button onClick={() => triggerFileUpload('selfie')} className="flex-1 bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm flex items-center justify-center space-x-2 hover:bg-slate-300"><UploadIcon className="w-4 h-4" /><span>Subir Foto</span></button>
                 </div>
                 {selfie && <img src={`data:image/jpeg;base64,${selfie}`} alt="Selfie" className="w-24 h-24 object-cover rounded-full mx-auto border-4 border-green-500"/>}
             </div>
@@ -234,26 +265,42 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                 <h3 className="font-semibold text-lg flex items-center justify-center mb-2"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> 2. Fotografía tu INE</h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('ineFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Frente</button>
-                        {ineFront && <img src={`data:image/jpeg;base64,${ineFront}`} alt="INE Frente" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                        <p className="text-sm font-medium mb-2">Frente</p>
+                        <div className="flex flex-col space-y-2 w-full">
+                            <button onClick={() => setCameraFor('ineFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Cámara</button>
+                            <button onClick={() => triggerFileUpload('ineFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Subir</button>
+                        </div>
+                        {ineFront && <img src={`data:image/jpeg;base64,${ineFront}`} alt="INE Frente" className="mt-2 h-20 w-full object-contain rounded-lg border-2 border-green-500"/>}
                     </div>
                     <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('ineBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Reverso</button>
-                        {ineBack && <img src={`data:image/jpeg;base64,${ineBack}`} alt="INE Reverso" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                        <p className="text-sm font-medium mb-2">Reverso</p>
+                        <div className="flex flex-col space-y-2 w-full">
+                           <button onClick={() => setCameraFor('ineBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Cámara</button>
+                           <button onClick={() => triggerFileUpload('ineBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Subir</button>
+                        </div>
+                        {ineBack && <img src={`data:image/jpeg;base64,${ineBack}`} alt="INE Reverso" className="mt-2 h-20 w-full object-contain rounded-lg border-2 border-green-500"/>}
                     </div>
                 </div>
             </div>
             
              <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold text-lg flex items-center justify-center mb-2"><IdIcon className="w-6 h-6 mr-2 text-secondary"/> 3. Licencia de Conducir</h3>
-                <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('licenseFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Frente</button>
-                        {licenseFront && <img src={`data:image/jpeg;base64,${licenseFront}`} alt="Licencia Frente" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                        <p className="text-sm font-medium mb-2">Frente</p>
+                         <div className="flex flex-col space-y-2 w-full">
+                            <button onClick={() => setCameraFor('licenseFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Cámara</button>
+                            <button onClick={() => triggerFileUpload('licenseFront')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Subir</button>
+                        </div>
+                        {licenseFront && <img src={`data:image/jpeg;base64,${licenseFront}`} alt="Licencia Frente" className="mt-2 h-20 w-full object-contain rounded-lg border-2 border-green-500"/>}
                     </div>
-                    <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('licenseBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Reverso</button>
-                        {licenseBack && <img src={`data:image/jpeg;base64,${licenseBack}`} alt="Licencia Reverso" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                     <div className="flex flex-col items-center">
+                        <p className="text-sm font-medium mb-2">Reverso</p>
+                        <div className="flex flex-col space-y-2 w-full">
+                           <button onClick={() => setCameraFor('licenseBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Cámara</button>
+                           <button onClick={() => triggerFileUpload('licenseBack')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Subir</button>
+                        </div>
+                        {licenseBack && <img src={`data:image/jpeg;base64,${licenseBack}`} alt="Licencia Reverso" className="mt-2 h-20 w-full object-contain rounded-lg border-2 border-green-500"/>}
                     </div>
                 </div>
             </div>
@@ -262,12 +309,20 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                 <h3 className="font-semibold text-lg flex items-center justify-center mb-2"><CarIcon className="w-6 h-6 mr-2 text-secondary"/> 4. Documentos del Vehículo</h3>
                  <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('registrationCard')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Tarjeta de Circulación</button>
-                        {registrationCard && <img src={`data:image/jpeg;base64,${registrationCard}`} alt="Tarjeta de Circulación" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                        <p className="text-sm font-medium mb-2">Tarjeta de Circulación</p>
+                        <div className="flex flex-col space-y-2 w-full">
+                            <button onClick={() => setCameraFor('registrationCard')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Cámara</button>
+                            <button onClick={() => triggerFileUpload('registrationCard')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Subir</button>
+                        </div>
+                        {registrationCard && <img src={`data:image/jpeg;base64,${registrationCard}`} alt="Tarjeta de Circulación" className="mt-2 h-20 w-full object-contain rounded-lg border-2 border-green-500"/>}
                     </div>
-                    <div className="flex flex-col items-center">
-                        <button onClick={() => setCameraFor('insurance')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md w-full">Póliza de Seguro</button>
-                        {insurance && <img src={`data:image/jpeg;base64,${insurance}`} alt="Póliza de Seguro" className="mt-2 h-20 rounded-lg border-2 border-green-500"/>}
+                     <div className="flex flex-col items-center">
+                        <p className="text-sm font-medium mb-2">Póliza de Seguro</p>
+                        <div className="flex flex-col space-y-2 w-full">
+                            <button onClick={() => setCameraFor('insurance')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Cámara</button>
+                            <button onClick={() => triggerFileUpload('insurance')} className="bg-slate-200 text-primary font-semibold py-2 px-4 rounded-md text-sm hover:bg-slate-300">Subir</button>
+                        </div>
+                        {insurance && <img src={`data:image/jpeg;base64,${insurance}`} alt="Póliza de Seguro" className="mt-2 h-20 w-full object-contain rounded-lg border-2 border-green-500"/>}
                     </div>
                 </div>
             </div>
@@ -320,6 +375,13 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                     onClose={() => setCameraFor(null)}
                 />
             )}
+             <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelected}
+                style={{ display: 'none' }}
+                accept="image/*"
+            />
             <div className="bg-white min-h-full py-12">
                 <div className="container mx-auto px-6 max-w-2xl">
                      <div className="text-center">
