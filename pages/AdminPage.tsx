@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { User, Vehicle } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { User, Vehicle, Booking } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useVehicle } from '../contexts/VehicleContext';
+import { useBooking } from '../contexts/BookingContext';
 import AddCarModal from '../components/AddCarModal';
 import { EyeIcon } from '../components/icons/EyeIcon';
 import { PlusCircleIcon } from '../components/icons/PlusCircleIcon';
 import { useNotification } from '../contexts/NotificationContext';
 import { CogIcon } from '../components/icons/CogIcon';
+import { ClipboardListIcon } from '../components/icons/ClipboardListIcon';
 
 const LessorReviewModal: React.FC<{ user: User; vehicles: Vehicle[]; onClose: () => void; onToggleVerify: (username: string) => void; }> = ({ user, vehicles, onClose, onToggleVerify }) => {
     const documentLabels: Record<string, string> = {
@@ -219,18 +221,105 @@ const PaymentSettings: React.FC = () => {
     );
 };
 
+const getStatusChipClass = (status: Booking['status']) => {
+    switch (status) {
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'confirmed': return 'bg-blue-100 text-blue-800';
+        case 'completed': return 'bg-green-100 text-green-800';
+        case 'cancelled': case 'rejected': return 'bg-red-100 text-red-800';
+    }
+};
+
+const AdminBookingCard: React.FC<{ booking: Booking, vehicle?: Vehicle, clientName: string, ownerName: string, onStatusChange: (id: number, status: Booking['status']) => void }> = ({ booking, vehicle, clientName, ownerName, onStatusChange }) => {
+    
+    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newStatus = e.target.value as Booking['status'];
+        if (window.confirm(`¿Estás seguro de que quieres cambiar el estado de esta reserva a "${newStatus}"?`)) {
+            onStatusChange(booking.id, newStatus);
+        } else {
+            e.target.value = booking.status; // Revert if cancelled
+        }
+    };
+    
+    return (
+        <div className="bg-white rounded-lg shadow-md p-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                {/* Vehicle Info */}
+                <div className="flex items-center space-x-3">
+                    {vehicle ? (
+                        <>
+                            <img src={vehicle.imageUrl[0]} alt={vehicle.name} className="w-24 h-20 object-cover rounded-lg" />
+                            <div>
+                                <p className="font-bold text-primary">{vehicle.brand} {vehicle.name}</p>
+                                <p className="text-sm text-gray-500">ID Reserva: {booking.id}</p>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="w-24 h-20 bg-slate-200 rounded-lg flex items-center justify-center">
+                            <span className="text-xs text-slate-500">Sin auto</span>
+                        </div>
+                    )}
+                </div>
+                {/* User & Date Info */}
+                <div className="text-sm text-gray-700 space-y-1">
+                    <p><strong>Cliente:</strong> {clientName} (@{booking.clientId})</p>
+                    <p><strong>Arrendador:</strong> {ownerName} (@{booking.ownerId})</p>
+                    <p><strong>Fechas:</strong> {booking.startDate} al {booking.endDate}</p>
+                </div>
+                {/* Price & Status */}
+                <div className="flex flex-col items-start md:items-end space-y-2">
+                    <div>
+                        <p className="text-sm text-gray-500">Ingreso Total</p>
+                        <p className="font-bold text-lg text-green-600">${booking.totalPrice.toLocaleString()}</p>
+                    </div>
+                     <div>
+                        <label htmlFor={`status-${booking.id}`} className="text-sm font-medium text-gray-700 mr-2">Estado:</label>
+                        <select
+                            id={`status-${booking.id}`}
+                            value={booking.status}
+                            onChange={handleStatusChange}
+                            className={`text-xs font-semibold py-1 pl-2 pr-6 rounded-full border-0 focus:ring-2 focus:ring-primary/50 capitalize ${getStatusChipClass(booking.status)}`}
+                        >
+                            <option value="pending">Pendiente</option>
+                            <option value="confirmed">Confirmada</option>
+                            <option value="completed">Completada</option>
+                            <option value="cancelled">Cancelada</option>
+                            <option value="rejected">Rechazada</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const AdminPage: React.FC = () => {
     const { users, toggleUserVerification } = useAuth();
     const { vehicles, deleteVehicle } = useVehicle();
+    const { bookings, updateBookingStatus } = useBooking();
+    
     const lessors = Object.entries(users)
                           .filter(([, u]) => u.role === 'arrendador')
                           .map(([username, userData]) => ({ ...userData, username })) as User[];
                           
-    const [activeTab, setActiveTab] = useState<'lessors' | 'vehicles' | 'settings'>('lessors');
+    const [activeTab, setActiveTab] = useState<'lessors' | 'vehicles' | 'bookings' | 'settings'>('lessors');
     const [reviewingLessor, setReviewingLessor] = useState<User | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCar, setSelectedCar] = useState<Vehicle | null>(null);
+    const [bookingFilter, setBookingFilter] = useState<Booking['status'] | 'all' | 'active'>('active');
+
+    const filteredBookings = useMemo(() => {
+        const sorted = [...bookings].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+        if (bookingFilter === 'all') {
+            return sorted;
+        }
+        if (bookingFilter === 'active') {
+            return sorted.filter(b => b.status === 'pending' || b.status === 'confirmed');
+        }
+        return sorted.filter(b => b.status === bookingFilter);
+    }, [bookings, bookingFilter]);
+
 
     const handleOpenAddModal = () => {
         setSelectedCar(null);
@@ -253,11 +342,16 @@ const AdminPage: React.FC = () => {
         }
     };
 
-
-    const TabButton: React.FC<{tab: 'lessors' | 'vehicles' | 'settings', label: string}> = ({tab, label}) => (
+    const TabButton: React.FC<{tab: 'lessors' | 'vehicles' | 'bookings' | 'settings', label: string}> = ({tab, label}) => (
         <button onClick={() => setActiveTab(tab)} className={`px-4 py-2 font-semibold rounded-md transition-colors ${activeTab === tab ? 'bg-primary text-white' : 'text-gray-600 hover:bg-slate-200'}`}>
             {label}
         </button>
+    );
+    
+    const BookingFilterButton: React.FC<{filter: typeof bookingFilter, label: string}> = ({filter, label}) => (
+      <button onClick={() => setBookingFilter(filter)} className={`px-3 py-1 text-sm rounded-full ${bookingFilter === filter ? 'bg-secondary text-primary font-semibold' : 'bg-slate-200 text-slate-700'}`}>
+          {label}
+      </button>
     );
 
     return (
@@ -279,10 +373,11 @@ const AdminPage: React.FC = () => {
                         )}
                     </div>
                     
-                    <div className="mb-8 flex space-x-2 bg-slate-100 p-1 rounded-lg border">
-                        <TabButton tab="lessors" label="Gestión de Arrendadores" />
-                        <TabButton tab="vehicles" label="Gestión de Vehículos" />
-                        <TabButton tab="settings" label="Configuración de Pagos" />
+                    <div className="mb-8 flex space-x-2 bg-slate-100 p-1 rounded-lg border overflow-x-auto">
+                        <TabButton tab="lessors" label="Arrendadores" />
+                        <TabButton tab="vehicles" label="Vehículos" />
+                        <TabButton tab="bookings" label="Reservas" />
+                        <TabButton tab="settings" label="Pagos" />
                     </div>
 
                     {activeTab === 'lessors' && (
@@ -318,6 +413,35 @@ const AdminPage: React.FC = () => {
                                     <h3 className="text-xl font-semibold">No hay vehículos en la plataforma</h3>
                                 </div>
                             )}
+                        </div>
+                    )}
+                    
+                    {activeTab === 'bookings' && (
+                        <div>
+                             <div className="mb-6 flex flex-wrap gap-2 items-center p-2 rounded-lg border bg-slate-100">
+                                <BookingFilterButton filter="active" label="Nuevas / Activas" />
+                                <BookingFilterButton filter="pending" label="Pendientes" />
+                                <BookingFilterButton filter="confirmed" label="Confirmadas" />
+                                <BookingFilterButton filter="completed" label="Completadas" />
+                                <BookingFilterButton filter="cancelled" label="Canceladas" />
+                                <BookingFilterButton filter="rejected" label="Rechazadas" />
+                                <BookingFilterButton filter="all" label="Todas" />
+                            </div>
+                            <div className="space-y-4">
+                                {filteredBookings.length > 0 ? (
+                                    filteredBookings.map(booking => {
+                                        const vehicle = vehicles.find(v => v.id === booking.vehicleId);
+                                        const clientName = users[booking.clientId]?.name || booking.clientId;
+                                        const ownerName = users[booking.ownerId]?.name || booking.ownerId;
+                                        return <AdminBookingCard key={booking.id} booking={booking} vehicle={vehicle} clientName={clientName} ownerName={ownerName} onStatusChange={updateBookingStatus} />
+                                    })
+                                ) : (
+                                     <div className="text-center py-16 text-gray-500 bg-white rounded-lg shadow-md col-span-full">
+                                        <ClipboardListIcon className="w-16 h-16 mx-auto mb-4 text-gray-300"/>
+                                        <h3 className="text-xl font-semibold">No hay reservas en esta categoría</h3>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 

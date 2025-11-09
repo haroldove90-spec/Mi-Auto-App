@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
 import NotificationContainer from './components/NotificationContainer';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import RoleSwitcher from './components/RoleSwitcher';
 
 // --- Dynamic Imports for Code-Splitting ---
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -175,6 +176,7 @@ const AppContent: React.FC = () => {
         onInstall={handleInstall} 
         onDismiss={handleDismissInstall} 
       />
+      {user && <RoleSwitcher />}
     </div>
   );
 };

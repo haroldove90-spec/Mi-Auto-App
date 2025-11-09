@@ -27,6 +27,7 @@ interface AuthContextType {
   updateUser: (name: string, avatar?: string) => void;
   toggleUserVerification: (username: string) => void;
   upgradeToLessor: (username: string, documents: Record<string, string>) => void;
+  switchRole: (username: 'cliente' | 'arrendador' | 'admin') => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -181,9 +182,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return prevUsers;
       });
   };
+  
+  const switchRole = (username: 'cliente' | 'arrendador' | 'admin') => {
+    const userData = users[username];
+    if (userData && userData.password) {
+        // Log out the current user and log in as the new one
+        login(username, userData.password);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, role, users, login, logout, register, updateUser, toggleUserVerification, upgradeToLessor }}>
+    <AuthContext.Provider value={{ user, role, users, login, logout, register, updateUser, toggleUserVerification, upgradeToLessor, switchRole }}>
       {children}
     </AuthContext.Provider>
   );
