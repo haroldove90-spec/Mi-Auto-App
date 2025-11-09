@@ -27,6 +27,13 @@ const VehicleDetailPage: React.FC<{ onNavigate: (page: Page) => void; }> = ({ on
     const { selectedVehicle: vehicle } = useVehicle();
     const { reviews } = useBooking();
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [mainImage, setMainImage] = useState(vehicle?.imageUrl[0] || '');
+
+    React.useEffect(() => {
+        if (vehicle) {
+            setMainImage(vehicle.imageUrl[0]);
+        }
+    }, [vehicle]);
 
     // This is a mock since we don't have a full user list context
     const owner: User | undefined = useMemo(() => {
@@ -76,13 +83,26 @@ const VehicleDetailPage: React.FC<{ onNavigate: (page: Page) => void; }> = ({ on
                         </div>
                     </div>
 
-                    {/* Image */}
+                    {/* Image Gallery */}
                     <div className="mb-12">
                         <img 
-                            src={vehicle.imageUrl[0]} 
+                            src={mainImage} 
                             alt={`${vehicle.brand} ${vehicle.name}`} 
-                            className="w-full max-h-[500px] object-cover rounded-lg shadow-lg" 
+                            className="w-full max-h-[500px] object-cover rounded-lg shadow-lg mb-4" 
                         />
+                        {vehicle.imageUrl.length > 1 && (
+                            <div className="grid grid-cols-5 gap-2">
+                                {vehicle.imageUrl.map((img, index) => (
+                                    <img 
+                                        key={index}
+                                        src={img}
+                                        alt={`Vista ${index + 1}`}
+                                        className={`w-full h-24 object-cover rounded-md cursor-pointer border-4 ${mainImage === img ? 'border-primary' : 'border-transparent hover:border-slate-300'}`}
+                                        onClick={() => setMainImage(img)}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
 
@@ -139,7 +159,7 @@ const VehicleDetailPage: React.FC<{ onNavigate: (page: Page) => void; }> = ({ on
                                 </p>
                                  <button onClick={() => setIsBookingModalOpen(true)} className="w-full bg-accent text-primary font-bold py-3 px-6 rounded-md hover:brightness-90 transition-all text-lg">
                                     Solicitar Reserva
-                                </button>
+                                 </button>
                                 <p className="text-xs text-gray-500 text-center mt-2">No se te cobrará nada aún</p>
                             </div>
                         </div>

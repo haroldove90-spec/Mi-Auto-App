@@ -1,16 +1,14 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { Vehicle } from '../types';
+import { Vehicle, VehicleData } from '../types';
 import { VEHICLES } from '../constants';
 import { useNotification } from './NotificationContext';
 import { useAuth } from './AuthContext';
-
-type VehicleData = Omit<Vehicle, 'id' | 'ownerId' | 'availability' | 'averageRating' | 'imageUrl'> & { imageUrl: string };
 
 interface VehicleContextType {
   vehicles: Vehicle[];
   selectedVehicle: Vehicle | null;
   selectVehicle: (vehicleId: number | null) => void;
-  addVehicle: (vehicleData: VehicleData) => void;
+  addVehicle: (vehicleData: Omit<VehicleData, 'imageUrl'> & { imageUrls: string[] }) => void;
   updateVehicle: (updatedVehicle: Vehicle) => void;
   deleteVehicle: (vehicleId: number) => void;
 }
@@ -53,7 +51,7 @@ export const VehicleProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
   };
 
-  const addVehicle = (vehicleData: VehicleData) => {
+  const addVehicle = (vehicleData: Omit<VehicleData, 'imageUrl'> & { imageUrls: string[] }) => {
     if (!user) return;
     const newVehicle: Vehicle = {
       ...vehicleData,
@@ -61,7 +59,7 @@ export const VehicleProvider: React.FC<{ children: ReactNode }> = ({ children })
       ownerId: role === 'admin' ? 'arrendador' : user.username,
       availability: [],
       averageRating: 0,
-      imageUrl: [vehicleData.imageUrl], // Store as an array
+      imageUrl: vehicleData.imageUrls,
     };
     setVehicles(prevVehicles => [...prevVehicles, newVehicle]);
   };

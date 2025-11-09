@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Vehicle, Page } from '../types';
 import { useBooking } from '../contexts/BookingContext';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import Calendar from './Calendar';
+import PayPalButton from './PayPalButton';
 
 interface BookingModalProps {
   vehicle: Vehicle | null;
@@ -18,6 +19,16 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [modalStep, setModalStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<'paypal' | null>(null);
+  const [payeeEmail, setPayeeEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    // In a real app, this would come from a backend. Here we use localStorage
+    // as configured by the admin in their dashboard.
+    const storedEmail = localStorage.getItem('paypalMerchantEmail');
+    setPayeeEmail(storedEmail);
+  }, []);
+
 
   if (!vehicle) return null;
 
@@ -58,8 +69,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
 
   const totalPrice = totalDays * vehicle.pricePerDay;
   
-  const handleBookingConfirmed = () => {
+  const handleBookingConfirmed = (method: 'paypal') => {
       if(!startDate || !endDate) return;
+    setPaymentMethod(method);
     requestBooking({ vehicle, startDate, endDate });
     setIsSuccess(true);
   };
@@ -77,8 +89,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
   const SuccessView = () => (
     <div className="text-center p-8">
         <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-primary mb-2">¡Reserva Confirmada!</h2>
-        <p className="text-gray-600 mb-6">Tu reserva se ha realizado con éxito. El pago se hará al momento de recoger el vehículo.</p>
+        <h2 className="text-2xl font-bold text-primary mb-2">¡Reserva Exitosa!</h2>
+        <p className="text-gray-600 mb-6">
+            Tu pago ha sido procesado con éxito. ¡Gracias por tu confianza!
+        </p>
         <button 
             onClick={handleGoToBookings}
             className="w-full bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-opacity-90 transition-all text-lg">
@@ -97,7 +111,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
         aria-labelledby="booking-modal-title"
       >
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10">
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
            </svg>
         </button>
@@ -131,10 +145,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
           )}
           {modalStep === 2 && (
              <>
-              <h2 id="booking-modal-title" className="text-2xl font-bold text-primary mb-2">Confirmar Reserva</h2>
-              <p className="text-gray-600 mb-6">Revisa los detalles y confirma tu reserva.</p>
+              <h2 id="booking-modal-title" className="text-2xl font-bold text-primary mb-2">Confirmar y Pagar</h2>
+              <p className="text-gray-600 mb-6">Revisa los detalles y completa el pago para confirmar tu reserva.</p>
               
-              <div className="space-y-6">
+              <div className="space-y-4">
                   {totalPrice > 0 && (
                       <div className="bg-slate-100 p-4 rounded-lg animate-fade-in-up">
                          <div className="flex justify-between items-center text-gray-600 text-sm">
@@ -146,19 +160,25 @@ const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onNavigat
                              <span>$0</span>
                          </div>
                          <div className="flex justify-between items-center font-bold text-primary mt-2 pt-2 border-t">
-                             <span>Total a pagar (MXN)</span>
-                             <span>${totalPrice.toLocaleString()}</span>
+                             <span>Total a pagar (USD)</span>
+                             <span>${totalPrice.toFixed(2)}</span>
                          </div>
                       </div>
                   )}
 
                   <div className="mt-4">
-                      <button
-                        onClick={handleBookingConfirmed}
-                        className="w-full bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-opacity-90 transition-all text-lg"
-                      >
-                          Confirmar Reserva (Pago Contra Entrega)
-                      </button>
+                    {payeeEmail ? (
+                         <PayPalButton 
+                            amount={totalPrice.toFixed(2)} 
+                            onSuccess={() => handleBookingConfirmed('paypal')} 
+                            payeeEmail={payeeEmail}
+                        />
+                    ) : (
+                        <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-lg">
+                            <p className="font-semibold">El sistema de pagos no está configurado.</p>
+                            <p className="text-sm">Por favor, contacta al administrador de la plataforma para habilitar los pagos.</p>
+                        </div>
+                    )}
                   </div>
 
                   <div className="mt-2 text-center">

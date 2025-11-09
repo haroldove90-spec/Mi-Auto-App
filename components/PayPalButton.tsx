@@ -9,9 +9,10 @@ declare global {
 interface PayPalButtonProps {
     amount: string;
     onSuccess: () => void;
+    payeeEmail: string;
 }
 
-const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, onSuccess }) => {
+const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, onSuccess, payeeEmail }) => {
     const paypalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -25,6 +26,9 @@ const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, onSuccess }) => {
                                 currency_code: 'USD', // Using USD as it's universally supported by PayPal sandbox
                                 value: amount,
                             },
+                            payee: {
+                                email_address: payeeEmail,
+                            }
                         }],
                     });
                 },
@@ -40,7 +44,7 @@ const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, onSuccess }) => {
                 },
             }).render(paypalRef.current);
         }
-    }, [amount, onSuccess]);
+    }, [amount, onSuccess, payeeEmail]);
 
     return <div ref={paypalRef}></div>;
 };

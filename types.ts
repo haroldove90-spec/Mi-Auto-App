@@ -1,4 +1,4 @@
-
+// FIX: Removed self-import of 'Page' which caused a declaration conflict.
 export type Page = 'home' | 'bookings' | 'my-cars' | 'profile' | 'admin' | 'how-it-works' | 'support' | 'terms' | 'contact' | 'lessor-onboarding' | 'vehicle-detail' | 'privacy-policy' | 'register-client';
 
 export type Role = 'cliente' | 'arrendador' | 'admin';
@@ -73,3 +73,6 @@ export interface Notification {
   message: string;
   type: 'success' | 'error' | 'info';
 }
+
+// FIX: Change `imageUrl` to `string[]` to support multiple images from the form.
+export type VehicleData = Omit<Vehicle, 'id' | 'ownerId' | 'availability' | 'averageRating'> & { imageUrl: string[] };

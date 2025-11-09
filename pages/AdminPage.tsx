@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Vehicle } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useVehicle } from '../contexts/VehicleContext';
 import AddCarModal from '../components/AddCarModal';
 import { EyeIcon } from '../components/icons/EyeIcon';
 import { PlusCircleIcon } from '../components/icons/PlusCircleIcon';
+import { useNotification } from '../contexts/NotificationContext';
+import { CogIcon } from '../components/icons/CogIcon';
 
 const LessorReviewModal: React.FC<{ user: User; vehicles: Vehicle[]; onClose: () => void; onToggleVerify: (username: string) => void; }> = ({ user, vehicles, onClose, onToggleVerify }) => {
     const documentLabels: Record<string, string> = {
@@ -167,6 +169,56 @@ const AdminVehicleCard: React.FC<{ vehicle: Vehicle; onEdit: (vehicle: Vehicle) 
     </div>
 );
 
+const PaymentSettings: React.FC = () => {
+    const [paypalEmail, setPaypalEmail] = useState('');
+    const { addNotification } = useNotification();
+
+    useEffect(() => {
+        const storedEmail = localStorage.getItem('paypalMerchantEmail');
+        if (storedEmail) {
+            setPaypalEmail(storedEmail);
+        }
+    }, []);
+
+    const handleSave = () => {
+        localStorage.setItem('paypalMerchantEmail', paypalEmail);
+        addNotification({ message: 'Configuración de pago guardada.', type: 'success' });
+    };
+
+    return (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
+                <CogIcon className="w-6 h-6 mr-2" />
+                Configuración de Pagos
+            </h2>
+            <p className="text-gray-600 mb-6">
+                Conecta tu cuenta de PayPal para recibir los pagos de tus clientes. Ingresa el correo electrónico asociado a tu cuenta de PayPal donde deseas recibir los fondos.
+            </p>
+            <div>
+                <label htmlFor="paypalEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email de PayPal
+                </label>
+                <input
+                    type="email"
+                    id="paypalEmail"
+                    value={paypalEmail}
+                    onChange={(e) => setPaypalEmail(e.target.value)}
+                    placeholder="tu-email@paypal.com"
+                    className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900"
+                />
+            </div>
+            <div className="mt-6">
+                <button
+                    onClick={handleSave}
+                    className="bg-accent text-primary font-bold py-2 px-6 rounded-md hover:brightness-90 transition-all"
+                >
+                    Guardar Configuración
+                </button>
+            </div>
+        </div>
+    );
+};
+
 
 const AdminPage: React.FC = () => {
     const { users, toggleUserVerification } = useAuth();
@@ -175,7 +227,7 @@ const AdminPage: React.FC = () => {
                           .filter(([, u]) => u.role === 'arrendador')
                           .map(([username, userData]) => ({ ...userData, username })) as User[];
                           
-    const [activeTab, setActiveTab] = useState<'lessors' | 'vehicles'>('lessors');
+    const [activeTab, setActiveTab] = useState<'lessors' | 'vehicles' | 'settings'>('lessors');
     const [reviewingLessor, setReviewingLessor] = useState<User | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCar, setSelectedCar] = useState<Vehicle | null>(null);
@@ -202,7 +254,7 @@ const AdminPage: React.FC = () => {
     };
 
 
-    const TabButton: React.FC<{tab: 'lessors' | 'vehicles', label: string}> = ({tab, label}) => (
+    const TabButton: React.FC<{tab: 'lessors' | 'vehicles' | 'settings', label: string}> = ({tab, label}) => (
         <button onClick={() => setActiveTab(tab)} className={`px-4 py-2 font-semibold rounded-md transition-colors ${activeTab === tab ? 'bg-primary text-white' : 'text-gray-600 hover:bg-slate-200'}`}>
             {label}
         </button>
@@ -215,7 +267,7 @@ const AdminPage: React.FC = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
                         <div>
                             <h1 className="text-3xl md:text-4xl font-bold text-primary">Dashboard del Administrador</h1>
-                             <p className="text-gray-600 mt-1">Gestiona arrendadores y vehículos de la plataforma.</p>
+                             <p className="text-gray-600 mt-1">Gestiona arrendadores, vehículos y pagos de la plataforma.</p>
                         </div>
                          {activeTab === 'vehicles' && (
                             <button 
@@ -230,6 +282,7 @@ const AdminPage: React.FC = () => {
                     <div className="mb-8 flex space-x-2 bg-slate-100 p-1 rounded-lg border">
                         <TabButton tab="lessors" label="Gestión de Arrendadores" />
                         <TabButton tab="vehicles" label="Gestión de Vehículos" />
+                        <TabButton tab="settings" label="Configuración de Pagos" />
                     </div>
 
                     {activeTab === 'lessors' && (
@@ -267,6 +320,8 @@ const AdminPage: React.FC = () => {
                             )}
                         </div>
                     )}
+
+                    {activeTab === 'settings' && <PaymentSettings />}
                 </div>
             </div>
             {reviewingLessor && (
