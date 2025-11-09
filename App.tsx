@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
@@ -55,6 +54,14 @@ const AppContent: React.FC = () => {
         window.removeEventListener('navigate', handleNavigateEvent);
     };
   }, [onNavigate]);
+
+  useEffect(() => {
+    // On login, redirect admin to their dashboard.
+    // They are free to navigate elsewhere afterwards.
+    if (user && role === 'admin' && currentPage === 'home') {
+        onNavigate('admin');
+    }
+  }, [user, role, currentPage, onNavigate]);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -143,7 +150,7 @@ const AppContent: React.FC = () => {
       case 'privacy-policy':
         return <StaticPage title="Política de Privacidad" content={contentPrivacyPolicy}/>;
       case 'contact':
-        return <ContactPage />;
+        return role !== 'admin' ? <ContactPage /> : <HomePage onNavigate={onNavigate} />;
       case 'lessor-onboarding':
         // This allows an existing 'cliente' to become a 'arrendador'
         return <LessorOnboardingPage onNavigate={onNavigate} />;

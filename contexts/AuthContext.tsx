@@ -13,6 +13,7 @@ type UserData = {
     phone?: string;
     dateOfBirth?: string;
     licenseNumber?: string;
+    address?: string;
     documents?: Record<string, string>;
 };
 
@@ -22,7 +23,7 @@ interface AuthContextType {
   users: Record<string, UserData>;
   login: (username: string, password: string) => boolean;
   logout: () => void;
-  register: (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl' | 'documents'> & {password: string}) => boolean;
+  register: (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl' | 'documents' | 'address'> & {password: string}) => boolean;
   updateUser: (name: string, avatar?: string) => void;
   toggleUserVerification: (username: string) => void;
   upgradeToLessor: (username: string, documents: Record<string, string>) => void;
@@ -70,6 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         phone: userData.phone,
         dateOfBirth: userData.dateOfBirth,
         licenseNumber: userData.licenseNumber,
+        address: userData.address,
         documents: userData.documents,
       };
       setUser(loggedInUser);
@@ -79,7 +81,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return false;
   };
   
-  const register = (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl' | 'documents'> & {password: string}): boolean => {
+  const register = (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl' | 'documents' | 'address'> & {password: string}): boolean => {
     const username = userData.username.toLowerCase();
     if (users[username]) {
         // User already exists

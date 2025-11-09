@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Page } from '../types';
 import { UserCircleIcon } from './icons/UserCircleIcon';
@@ -30,14 +30,20 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     setProfileMenuOpen(false);
   };
 
-  const commonLinks = [
-    { label: 'Vehículos', page: 'home' as Page },
-    { label: 'Contacto', page: 'contact' as Page },
-  ];
+  const navLinks = useMemo(() => {
+      const links = [
+        { label: 'Vehículos', page: 'home' as Page },
+        { label: 'Contacto', page: 'contact' as Page },
+      ];
+      if (role === 'admin') {
+          return links.filter(link => link.page !== 'contact');
+      }
+      return links;
+  }, [role]);
 
   const renderDesktopNav = () => (
     <nav className="hidden md:flex items-center space-x-8">
-      {commonLinks.map(link => (
+      {navLinks.map(link => (
           <a key={link.page} href="#" onClick={(e) => { e.preventDefault(); onNavigate(link.page); }} className="text-gray-200 hover:text-white transition-colors">{link.label}</a>
       ))}
       {role === 'cliente' && (
@@ -75,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const renderMobileMenu = () => (
     <div className={`absolute top-full left-0 right-0 bg-primary shadow-lg md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
         <div className="flex flex-col px-6 py-4 space-y-4">
-            {commonLinks.map(link => (
+            {navLinks.map(link => (
                  <a key={link.page} href="#" onClick={(e) => { e.preventDefault(); onNavigate(link.page); setMobileMenuOpen(false); }} className="text-gray-200 hover:text-white transition-colors">{link.label}</a>
             ))}
             {role === 'cliente' && (
@@ -103,7 +109,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className="flex items-center">
+        <a href="#" onClick={(e) => { e.preventDefault(); onNavigate(role === 'admin' ? 'admin' : 'home'); }} className="flex items-center">
           <img src={logoUrl} alt="Mi Auto App Logo" className="h-10" />
         </a>
         {renderDesktopNav()}
@@ -113,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           aria-label="Abrir menú de navegación"
           aria-expanded={isMobileMenuOpen}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
           </svg>
         </button>

@@ -32,53 +32,21 @@ const BottomNav: React.FC<BottomNavProps> = ({ activePage, onNavigate }) => {
   const { role } = useAuth();
 
   const getNavItems = () => {
-    const commonItems = [
-      {
-        page: 'home' as Page,
-        label: 'Vehículos',
-        icon: <CarIcon className="w-6 h-6" />,
-      },
-    ];
-
     const roleSpecificItems = {
       cliente: [
-        ...commonItems,
-        {
-          page: 'bookings' as Page,
-          label: 'Reservas',
-          icon: <ClipboardListIcon className="w-6 h-6" />,
-        },
-        {
-          page: 'profile' as Page,
-          label: 'Perfil',
-          icon: <UserCircleIcon className="w-6 h-6" />,
-        },
+        { page: 'home' as Page, label: 'Vehículos', icon: <CarIcon className="w-6 h-6" />, },
+        { page: 'bookings' as Page, label: 'Reservas', icon: <ClipboardListIcon className="w-6 h-6" />, },
+        { page: 'profile' as Page, label: 'Perfil', icon: <UserCircleIcon className="w-6 h-6" />, },
       ],
       arrendador: [
-        ...commonItems,
-        {
-          page: 'my-cars' as Page,
-          label: 'Mis Autos',
-          icon: <CogIcon className="w-6 h-6" />,
-        },
-        {
-          page: 'profile' as Page,
-          label: 'Perfil',
-          icon: <UserCircleIcon className="w-6 h-6" />,
-        },
+        { page: 'home' as Page, label: 'Vehículos', icon: <CarIcon className="w-6 h-6" />, },
+        { page: 'my-cars' as Page, label: 'Mis Autos', icon: <CogIcon className="w-6 h-6" />, },
+        { page: 'profile' as Page, label: 'Perfil', icon: <UserCircleIcon className="w-6 h-6" />, },
       ],
       admin: [
-        ...commonItems,
-        {
-          page: 'admin' as Page,
-          label: 'Admin',
-          icon: <CogIcon className="w-6 h-6" />,
-        },
-        {
-          page: 'profile' as Page,
-          label: 'Perfil',
-          icon: <UserCircleIcon className="w-6 h-6" />,
-        },
+        { page: 'admin' as Page, label: 'Dashboard', icon: <CogIcon className="w-6 h-6" />, },
+        { page: 'home' as Page, label: 'Vehículos', icon: <CarIcon className="w-6 h-6" />, },
+        { page: 'profile' as Page, label: 'Perfil', icon: <UserCircleIcon className="w-6 h-6" />, },
       ],
     };
 

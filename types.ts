@@ -1,3 +1,4 @@
+
 export type Page = 'home' | 'bookings' | 'my-cars' | 'profile' | 'admin' | 'how-it-works' | 'support' | 'terms' | 'contact' | 'lessor-onboarding' | 'vehicle-detail' | 'privacy-policy' | 'register-client';
 
 export type Role = 'cliente' | 'arrendador' | 'admin';
@@ -13,6 +14,7 @@ export interface User {
   phone?: string;
   dateOfBirth?: string;
   licenseNumber?: string;
+  address?: string;
   documents?: Record<string, string>;
 }
 

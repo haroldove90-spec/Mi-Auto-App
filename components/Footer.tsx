@@ -1,12 +1,15 @@
 import React from 'react';
 import { Page } from '../types';
 import { logoUrl } from '../logo';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FooterProps {
   onNavigate: (page: Page) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const { role } = useAuth();
+  
   return (
     <footer className="bg-gray-800 text-white">
       <div className="container mx-auto px-6 py-12">
@@ -27,7 +30,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h3 className="font-bold mb-4 uppercase tracking-wider">Soporte</h3>
             <ul>
               <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('support'); }} className="hover:text-secondary transition-colors">Soporte</a></li>
-              <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('contact'); }} className="hover:text-secondary transition-colors">Contáctanos</a></li>
+              {role !== 'admin' && (
+                <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('contact'); }} className="hover:text-secondary transition-colors">Contáctanos</a></li>
+              )}
               <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('terms'); }} className="hover:text-secondary transition-colors">Términos y Condiciones</a></li>
               <li className="mb-2"><a href="#" onClick={(e) => { e.preventDefault(); onNavigate('privacy-policy'); }} className="hover:text-secondary transition-colors">Política de Privacidad</a></li>
             </ul>
