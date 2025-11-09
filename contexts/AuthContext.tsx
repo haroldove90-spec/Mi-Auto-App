@@ -13,15 +13,19 @@ type UserData = {
     phone?: string;
     dateOfBirth?: string;
     licenseNumber?: string;
+    documents?: Record<string, string>;
 };
 
 interface AuthContextType {
   user: User | null;
   role: Role | null;
+  users: Record<string, UserData>;
   login: (username: string, password: string) => boolean;
   logout: () => void;
-  register: (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl'> & {password: string}) => boolean;
+  register: (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl' | 'documents'> & {password: string}) => boolean;
   updateUser: (name: string, avatar?: string) => void;
+  toggleUserVerification: (username: string) => void;
+  upgradeToLessor: (username: string, documents: Record<string, string>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         phone: userData.phone,
         dateOfBirth: userData.dateOfBirth,
         licenseNumber: userData.licenseNumber,
+        documents: userData.documents,
       };
       setUser(loggedInUser);
       setRole(userData.role);
@@ -74,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return false;
   };
   
-  const register = (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl'> & {password: string}): boolean => {
+  const register = (userData: Omit<User, 'memberSince' | 'averageRating' | 'isVerified' | 'role' | 'avatarUrl' | 'documents'> & {password: string}): boolean => {
     const username = userData.username.toLowerCase();
     if (users[username]) {
         // User already exists
@@ -99,8 +104,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         [username]: newUser
     }));
 
-    // FIX: Manually set the user state to log them in immediately after registration.
-    // The previous call to login() failed because the 'users' state update is asynchronous.
     const loggedInUser: User = {
       username: username,
       role: newUser.role,
@@ -131,8 +134,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const toggleUserVerification = (username: string) => {
+    setUsers(prevUsers => {
+        const userToUpdate = prevUsers[username];
+        if (userToUpdate && userToUpdate.role === 'arrendador') {
+            return {
+                ...prevUsers,
+                [username]: {
+                    ...userToUpdate,
+                    isVerified: !userToUpdate.isVerified,
+                }
+            };
+        }
+        return prevUsers;
+    });
+  };
+
+  const upgradeToLessor = (username: string, documents: Record<string, string>) => {
+      setUsers(prevUsers => {
+          const userToUpdate = prevUsers[username];
+          if (userToUpdate) {
+              const updatedUser = {
+                  ...userToUpdate,
+                  role: 'arrendador' as Role,
+                  isVerified: false, // Must be approved by admin
+                  documents,
+              };
+              
+              if (user && user.username === username) {
+                  setUser(prevUser => ({
+                      ...prevUser!,
+                      role: 'arrendador',
+                      isVerified: false,
+                      documents,
+                  }));
+                  setRole('arrendador');
+              }
+
+              return {
+                  ...prevUsers,
+                  [username]: updatedUser,
+              };
+          }
+          return prevUsers;
+      });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, register, updateUser }}>
+    <AuthContext.Provider value={{ user, role, users, login, logout, register, updateUser, toggleUserVerification, upgradeToLessor }}>
       {children}
     </AuthContext.Provider>
   );

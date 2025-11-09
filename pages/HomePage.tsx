@@ -3,6 +3,7 @@ import Hero from '../components/Hero';
 import VehicleList from '../components/VehicleList';
 import { Vehicle, Page } from '../types';
 import { useVehicle } from '../contexts/VehicleContext';
+import { useAuth } from '../contexts/AuthContext';
 import VehicleFilters from '../components/VehicleFilters';
 
 interface HomePageProps {
@@ -11,6 +12,7 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { vehicles, selectVehicle } = useVehicle();
+  const { users, role } = useAuth();
   const [isSearching, setIsSearching] = useState(false);
   
   const [filters, setFilters] = useState({
@@ -33,7 +35,17 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   };
   
   const filteredVehicles = useMemo(() => {
+    const verifiedLessorUsernames = new Set(
+        Object.entries(users)
+            .filter(([, userData]) => userData.role === 'arrendador' && userData.isVerified)
+            .map(([username]) => username)
+    );
+
     return vehicles.filter(vehicle => {
+      if (role !== 'admin' && !verifiedLessorUsernames.has(vehicle.ownerId)) {
+        return false;
+      }
+      
       // Type filter
       if (filters.type !== 'all' && vehicle.specs.type !== filters.type) {
         return false;
@@ -55,7 +67,7 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       }
       return true;
     });
-  }, [vehicles, filters]);
+  }, [vehicles, filters, users, role]);
 
 
   const handleSearch = () => {

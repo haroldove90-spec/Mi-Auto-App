@@ -1,15 +1,14 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, GenerateContentResponse, Type } from '@google/genai';
 import { Page } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { CameraIcon } from '../components/icons/CameraIcon';
 import { UploadIcon } from '../components/icons/UploadIcon';
 import { IdIcon } from '../components/icons/IdIcon';
 import { CarIcon } from '../components/icons/CarIcon';
 
-// Helper function to convert file to base64
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -51,7 +50,6 @@ const CameraModal: React.FC<CameraModalProps> = ({ facingMode, onCapture, onClos
         startCamera();
 
         return () => {
-            // Cleanup: stop camera stream when component unmounts
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
             }
@@ -66,7 +64,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ facingMode, onCapture, onClos
             canvas.height = video.videoHeight;
             canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const dataUrl = canvas.toDataURL('image/jpeg');
-            onCapture(dataUrl.split(',')[1]); // Send base64 data without prefix
+            onCapture(dataUrl.split(',')[1]);
             onClose();
         }
     };
@@ -99,8 +97,15 @@ interface LessorOnboardingPageProps {
 }
 
 const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate }) => {
+    const { user, upgradeToLessor } = useAuth();
+    const { addNotification } = useNotification();
+    
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+    const [formData, setFormData] = useState({ 
+        name: user?.name || '', 
+        email: user ? `${user.username}@example.com` : '', 
+        phone: user?.phone || '' 
+    });
     const [selfie, setSelfie] = useState<string | null>(null);
     const [ineFront, setIneFront] = useState<string | null>(null);
     const [ineBack, setIneBack] = useState<string | null>(null);
@@ -116,10 +121,14 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     const [isLoading, setIsLoading] = useState(false);
     const [verificationResult, setVerificationResult] = useState<{ success: boolean; message: string } | null>(null);
     const [error, setError] = useState<string>('');
-    const { addNotification } = useNotification();
+    
 
     const handleDataSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) {
+             setError('Debes iniciar sesión como cliente para registrarte como arrendador.');
+             return;
+        }
         if (!formData.name || !formData.email || !formData.phone) {
             setError('Todos los campos son obligatorios.');
             return;
@@ -156,7 +165,7 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                 setError("Hubo un error al procesar el archivo.");
             } finally {
                 setUploadFor(null);
-                if (e.target) e.target.value = ''; // Reset input to allow re-uploading same file
+                if (e.target) e.target.value = '';
             }
         }
     };
@@ -198,14 +207,10 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                     responseSchema: {
                         type: Type.OBJECT,
                         properties: {
-                            faceMatch: { type: Type.BOOLEAN, description: '¿El rostro de la selfie coincide con los documentos?' },
-                            nameMatch: { type: Type.BOOLEAN, description: '¿El nombre en los documentos coincide con el nombre proporcionado?' },
-                            documentsLookValid: { type: Type.BOOLEAN, description: '¿Los documentos parecen auténticos y sin alteraciones?' },
-                            vehicleInfoConsistent: { type: Type.BOOLEAN, description: '¿La información del vehículo es consistente entre los documentos?' },
-                            isVerificationSuccessful: { type: Type.BOOLEAN, description: 'Decisión final basada en todas las verificaciones.' },
-                            reason: { type: Type.STRING, description: 'Una explicación concisa de la decisión, especialmente si falló (ej. "El rostro no coincide con el INE").' },
-                            extractedNameFromINE: { type: Type.STRING, description: 'Nombre completo extraído del INE.' },
-                            extractedNameFromLicense: { type: Type.STRING, description: 'Nombre completo extraído de la licencia.' },
+                            faceMatch: { type: Type.BOOLEAN }, nameMatch: { type: Type.BOOLEAN },
+                            documentsLookValid: { type: Type.BOOLEAN }, vehicleInfoConsistent: { type: Type.BOOLEAN },
+                            isVerificationSuccessful: { type: Type.BOOLEAN }, reason: { type: Type.STRING },
+                            extractedNameFromINE: { type: Type.STRING }, extractedNameFromLicense: { type: Type.STRING },
                         }
                     }
                 }
@@ -214,8 +219,16 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
             const result = JSON.parse(response.text);
 
             if (result.isVerificationSuccessful) {
-                setVerificationResult({ success: true, message: "¡Verificación exitosa! Tu cuenta de arrendador ha sido aprobada." });
-                addNotification({ message: '¡Registro completado!', type: 'success' });
+                if (user) {
+                    const documents = { selfie, ineFront, ineBack, licenseFront, licenseBack, registrationCard, insurance };
+                    const validDocuments: Record<string, string> = Object.entries(documents)
+                        .filter(([, value]) => value !== null)
+                        .reduce((acc, [key, value]) => ({ ...acc, [key]: value as string }), {});
+                    
+                    upgradeToLessor(user.username, validDocuments);
+                }
+                setVerificationResult({ success: true, message: "¡Solicitud Enviada! Tu perfil será revisado por un administrador para su aprobación final." });
+                addNotification({ message: '¡Solicitud de arrendador enviada!', type: 'success' });
                 setStep(3);
             } else {
                 setVerificationResult({ success: false, message: result.reason || "La verificación falló. Por favor, inténtalo de nuevo." });
@@ -231,6 +244,12 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     
     const renderStep1 = () => (
          <form onSubmit={handleDataSubmit} className="space-y-6">
+            {!user && (
+                 <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-lg">
+                    <p className="font-semibold">Debes iniciar sesión como cliente para poder registrarte como arrendador.</p>
+                    <button type="button" onClick={() => onNavigate('home')} className="mt-2 text-sm font-bold underline">Ir a Iniciar Sesión</button>
+                </div>
+            )}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo (como aparece en tu INE)</label>
               <input type="text" id="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
@@ -244,7 +263,7 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
               <input type="tel" id="phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white text-gray-900" />
             </div>
             {error && <p className="text-red-500 text-sm font-semibold">{error}</p>}
-            <button type="submit" className="w-full bg-accent text-primary font-bold py-3 px-6 rounded-md hover:brightness-90 transition-all text-lg">
+            <button type="submit" disabled={!user} className="w-full bg-accent text-primary font-bold py-3 px-6 rounded-md hover:brightness-90 transition-all text-lg disabled:bg-slate-300 disabled:cursor-not-allowed">
                 Siguiente
             </button>
         </form>
@@ -344,7 +363,7 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
                         </svg>
                         Verificando con IA...
                     </>
-                ) : 'Verificar Identidad'}
+                ) : 'Enviar para Verificación'}
             </button>
              <button onClick={() => setStep(1)} className="w-full text-center text-sm text-gray-600 hover:underline mt-2">
                 Volver
@@ -355,13 +374,12 @@ const LessorOnboardingPage: React.FC<LessorOnboardingPageProps> = ({ onNavigate 
     const renderStep3 = () => (
         <div className="text-center p-8">
             <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-primary mb-2">¡Registro Completado!</h2>
-            <p className="text-gray-600 mb-6">{verificationResult?.message || "Tu cuenta ha sido creada y verificada."}</p>
-            <p className="text-gray-600 mb-6">Ahora puedes iniciar sesión para agregar tus vehículos.</p>
+            <h2 className="text-2xl font-bold text-primary mb-2">¡Solicitud Enviada!</h2>
+            <p className="text-gray-600 mb-6">{verificationResult?.message || "Tu perfil será revisado por un administrador. Te notificaremos cuando sea aprobado."}</p>
             <button 
                 onClick={() => onNavigate('home')}
                 className="w-full bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-opacity-90 transition-all text-lg">
-                Ir a Iniciar Sesión
+                Volver al Inicio
             </button>
         </div>
     );

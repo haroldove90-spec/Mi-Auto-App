@@ -13,6 +13,7 @@ export interface User {
   phone?: string;
   dateOfBirth?: string;
   licenseNumber?: string;
+  documents?: Record<string, string>;
 }
 
 export interface VehicleSpecs {
